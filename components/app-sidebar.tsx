@@ -72,7 +72,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarContent className="px-2">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild isActive={pathname === '/' || /^\/[\w-]+$/.test(pathname)}>
+            <SidebarMenuButton asChild isActive={pathname === '/' || /^\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(pathname)}>
               <Link href="/" className="flex items-center gap-3">
                 <House size={20} />
                 <span>Home</span>
