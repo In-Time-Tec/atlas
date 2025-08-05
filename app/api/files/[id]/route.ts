@@ -126,6 +126,8 @@ export async function PUT(
     if (tags !== undefined) updateData.tags = tags.length > 0 ? tags : null;
     if (folderId !== undefined) updateData.folderId = folderId;
 
+    console.log('Updating file with data:', updateData);
+    
     const [updatedFile] = await db
       .update(fileLibrary)
       .set(updateData)
@@ -138,6 +140,8 @@ export async function PUT(
     if (!updatedFile) {
       return NextResponse.json({ error: 'Failed to update file' }, { status: 500 });
     }
+
+    console.log('File updated successfully:', updatedFile);
 
     const fileWithFolder = await db
       .select({

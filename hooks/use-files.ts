@@ -184,12 +184,45 @@ export function useUpdateFile() {
 
   return useMutation({
     mutationFn: updateFile,
+    onMutate: async (updateData: UpdateFileData) => {
+      await queryClient.cancelQueries({ queryKey: [FILES_QUERY_KEY] });
+
+      const previousData = queryClient.getQueriesData({ queryKey: [FILES_QUERY_KEY] });
+
+      queryClient.setQueriesData({ queryKey: [FILES_QUERY_KEY] }, (old: FilesResponse | undefined) => {
+        if (!old) return old;
+        return {
+          ...old,
+          files: old.files.map((file) => 
+            file.id === updateData.id
+              ? {
+                  ...file,
+                  ...(updateData.filename !== undefined && { filename: updateData.filename }),
+                  ...(updateData.description !== undefined && { description: updateData.description }),
+                  ...(updateData.tags !== undefined && { tags: updateData.tags }),
+                  ...(updateData.folderId !== undefined && { folderId: updateData.folderId }),
+                  updatedAt: new Date().toISOString(),
+                }
+              : file
+          ),
+        };
+      });
+
+      return { previousData };
+    },
+    onError: (error: Error, _, context) => {
+      if (context?.previousData) {
+        context.previousData.forEach(([queryKey, data]) => {
+          queryClient.setQueryData(queryKey, data);
+        });
+      }
+      toast.error(error.message || 'Failed to update file');
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [FILES_QUERY_KEY] });
       toast.success('File updated successfully');
     },
-    onError: (error: Error) => {
-      toast.error(error.message || 'Failed to update file');
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: [FILES_QUERY_KEY] });
     },
   });
 }

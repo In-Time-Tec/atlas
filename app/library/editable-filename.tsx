@@ -13,7 +13,7 @@ interface EditableFilenameProps {
 }
 
 export function EditableFilename({ file, isEditing, onEditingChange }: EditableFilenameProps) {
-  const [value, setValue] = useState(file.originalName || file.filename || '');
+  const [value, setValue] = useState(file.filename || '');
   const inputRef = useRef<HTMLInputElement>(null);
   const updateMutation = useUpdateFile();
 
@@ -25,20 +25,20 @@ export function EditableFilename({ file, isEditing, onEditingChange }: EditableF
   }, [isEditing]);
 
   useEffect(() => {
-    setValue(file.originalName || file.filename || '');
-  }, [file.originalName, file.filename]);
+    setValue(file.filename || '');
+  }, [file.filename]);
 
   const handleSave = async () => {
     const trimmedValue = value.trim();
     
     if (!trimmedValue) {
       toast.error('Filename cannot be empty');
-      setValue(file.originalName || file.filename || '');
+      setValue(file.filename || '');
       onEditingChange(false);
       return;
     }
 
-    if (trimmedValue === (file.originalName || file.filename)) {
+    if (trimmedValue === file.filename) {
       onEditingChange(false);
       return;
     }
@@ -51,13 +51,13 @@ export function EditableFilename({ file, isEditing, onEditingChange }: EditableF
       onEditingChange(false);
     } catch (error) {
       console.error('Failed to rename file:', error);
-      setValue(file.originalName || file.filename || '');
+      setValue(file.filename || '');
       onEditingChange(false);
     }
   };
 
   const handleCancel = () => {
-    setValue(file.originalName || file.filename || '');
+    setValue(file.filename || '');
     onEditingChange(false);
   };
 
@@ -106,10 +106,10 @@ export function EditableFilename({ file, isEditing, onEditingChange }: EditableF
       {updateMutation.isPending ? (
         <span className="flex items-center gap-2">
           <div className="animate-spin h-3 w-3 border border-current border-t-transparent rounded-full" />
-          {file.originalName || file.filename || 'Unknown'}
+          {file.filename || 'Unknown'}
         </span>
       ) : (
-        file.originalName || file.filename || 'Unknown'
+        file.filename || 'Unknown'
       )}
     </button>
   );
