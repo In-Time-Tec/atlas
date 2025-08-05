@@ -44,7 +44,7 @@ const FileListQuerySchema = z.object({
   folderId: z.string().optional(),
   search: z.string().optional(),
   tags: z.string().optional(),
-  limit: z.coerce.number().min(1).max(100).default(20),
+  limit: z.coerce.number().min(1).max(1000).default(20),
   offset: z.coerce.number().min(0).default(0),
   sortBy: z.enum(['createdAt', 'filename', 'size']).default('createdAt'),
   sortOrder: z.enum(['asc', 'desc']).default('desc'),
