@@ -14,7 +14,6 @@ import {
   customInstructions,
   payment,
   lookout,
-  type Lookout,
 } from './schema';
 import { ChatSDKError } from '../errors';
 import { db } from './index'; // Use unified database connection
