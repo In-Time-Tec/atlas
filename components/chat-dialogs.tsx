@@ -82,7 +82,6 @@ export const PostMessageUpgradeDialog = React.memo(({ open, onOpenChange }: Post
 
 PostMessageUpgradeDialog.displayName = 'PostMessageUpgradeDialog';
 
-
 interface ChatDialogsProps {
   commandDialogOpen: boolean;
   setCommandDialogOpen: (open: boolean) => void;
