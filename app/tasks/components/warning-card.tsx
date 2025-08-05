@@ -15,11 +15,11 @@ interface WarningCardProps {
 const warningConfig = {
   'total-limit': {
     icon: Alert02Icon,
-    message: "You've reached the maximum of 10 lookouts. Delete existing lookouts to create new ones.",
+    message: "You've reached the maximum of 10 tasks. Delete existing tasks to create new ones.",
   },
   'daily-limit': {
     icon: AlarmClockIcon,
-    message: "You've reached the maximum of 5 active daily lookouts. Pause or delete existing daily lookouts to create new ones.",
+    message: "You've reached the maximum of 5 active daily tasks. Pause or delete existing daily tasks to create new ones.",
   },
   custom: {
     icon: Alert02Icon,

@@ -13,7 +13,7 @@ import {
   messageUsage,
   customInstructions,
   payment,
-  lookout,
+  tasks,
 } from './schema';
 import { ChatSDKError } from '../errors';
 import { db } from './index'; // Use unified database connection
@@ -682,8 +682,8 @@ export async function getDodoPaymentsExpirationInfo({ userId }: { userId: string
   }
 }
 
-// Lookout CRUD operations
-export async function createLookout({
+// Tasks CRUD operations
+export async function createTask({
   userId,
   title,
   prompt,
@@ -703,8 +703,8 @@ export async function createLookout({
   qstashScheduleId?: string;
 }) {
   try {
-    const [newLookout] = await db
-      .insert(lookout)
+    const [newTask] = await db
+      .insert(tasks)
       .values({
         userId,
         title,
@@ -717,41 +717,41 @@ export async function createLookout({
       })
       .returning();
 
-    console.log('✅ Created lookout with ID:', newLookout.id, 'for user:', userId);
-    return newLookout;
+    console.log('✅ Created task with ID:', newTask.id, 'for user:', userId);
+    return newTask;
   } catch (error) {
-    console.error('❌ Failed to create lookout:', error);
-    throw new ChatSDKError('bad_request:database', 'Failed to create lookout');
+    console.error('❌ Failed to create task:', error);
+    throw new ChatSDKError('bad_request:database', 'Failed to create task');
   }
 }
 
-export async function getLookoutsByUserId({ userId }: { userId: string }) {
+export async function getTasksByUserId({ userId }: { userId: string }) {
   try {
-    return await db.select().from(lookout).where(eq(lookout.userId, userId)).orderBy(desc(lookout.createdAt));
+    return await db.select().from(tasks).where(eq(tasks.userId, userId)).orderBy(desc(tasks.createdAt));
   } catch (error) {
-    throw new ChatSDKError('bad_request:database', 'Failed to get lookouts by user id');
+    throw new ChatSDKError('bad_request:database', 'Failed to get tasks by user id');
   }
 }
 
-export async function getLookoutById({ id }: { id: string }) {
+export async function getTaskById({ id }: { id: string }) {
   try {
-    console.log('🔍 Looking up lookout with ID:', id);
-    const [selectedLookout] = await db.select().from(lookout).where(eq(lookout.id, id));
+    console.log('🔍 Looking up task with ID:', id);
+    const [selectedTask] = await db.select().from(tasks).where(eq(tasks.id, id));
 
-    if (selectedLookout) {
-      console.log('✅ Found lookout:', selectedLookout.id, selectedLookout.title);
+    if (selectedTask) {
+      console.log('✅ Found task:', selectedTask.id, selectedTask.title);
     } else {
-      console.log('❌ No lookout found with ID:', id);
+      console.log('❌ No task found with ID:', id);
     }
 
-    return selectedLookout;
+    return selectedTask;
   } catch (error) {
-    console.error('❌ Error fetching lookout by ID:', id, error);
-    throw new ChatSDKError('bad_request:database', 'Failed to get lookout by id');
+    console.error('❌ Error fetching task by ID:', id, error);
+    throw new ChatSDKError('bad_request:database', 'Failed to get task by id');
   }
 }
 
-export async function updateLookout({
+export async function updateTask({
   id,
   title,
   prompt,
@@ -780,29 +780,29 @@ export async function updateLookout({
     if (nextRunAt !== undefined) updateData.nextRunAt = nextRunAt;
     if (qstashScheduleId !== undefined) updateData.qstashScheduleId = qstashScheduleId;
 
-    const [updatedLookout] = await db.update(lookout).set(updateData).where(eq(lookout.id, id)).returning();
+    const [updatedTask] = await db.update(tasks).set(updateData).where(eq(tasks.id, id)).returning();
 
-    return updatedLookout;
+    return updatedTask;
   } catch (error) {
-    throw new ChatSDKError('bad_request:database', 'Failed to update lookout');
+    throw new ChatSDKError('bad_request:database', 'Failed to update task');
   }
 }
 
-export async function updateLookoutStatus({ id, status }: { id: string; status: 'active' | 'paused' | 'archived' | 'running' }) {
+export async function updateTaskStatus({ id, status }: { id: string; status: 'active' | 'paused' | 'archived' | 'running' }) {
   try {
-    const [updatedLookout] = await db
-      .update(lookout)
+    const [updatedTask] = await db
+      .update(tasks)
       .set({ status, updatedAt: new Date() })
-      .where(eq(lookout.id, id))
+      .where(eq(tasks.id, id))
       .returning();
 
-    return updatedLookout;
+    return updatedTask;
   } catch (error) {
-    throw new ChatSDKError('bad_request:database', 'Failed to update lookout status');
+    throw new ChatSDKError('bad_request:database', 'Failed to update task status');
   }
 }
 
-export async function updateLookoutLastRun({
+export async function updateTaskLastRun({
   id,
   lastRunAt,
   lastRunChatId,
@@ -824,13 +824,13 @@ export async function updateLookoutLastRun({
   searchesPerformed?: number;
 }) {
   try {
-    // Get current lookout to append to run history
-    const currentLookout = await getLookoutById({ id });
-    if (!currentLookout) {
-      throw new Error('Lookout not found');
+    // Get current task to append to run history
+    const currentTask = await getTaskById({ id });
+    if (!currentTask) {
+      throw new Error('Task not found');
     }
 
-    const currentHistory = (currentLookout.runHistory as any[]) || [];
+    const currentHistory = (currentTask.runHistory as any[]) || [];
     
     // Add new run to history
     const newRun = {
@@ -854,21 +854,21 @@ export async function updateLookoutLastRun({
     };
     if (nextRunAt) updateData.nextRunAt = nextRunAt;
 
-    const [updatedLookout] = await db.update(lookout).set(updateData).where(eq(lookout.id, id)).returning();
+    const [updatedTask] = await db.update(tasks).set(updateData).where(eq(tasks.id, id)).returning();
 
-    return updatedLookout;
+    return updatedTask;
   } catch (error) {
-    throw new ChatSDKError('bad_request:database', 'Failed to update lookout last run');
+    throw new ChatSDKError('bad_request:database', 'Failed to update task last run');
   }
 }
 
 // New function to get run statistics
-export async function getLookoutRunStats({ id }: { id: string }) {
+export async function getTaskRunStats({ id }: { id: string }) {
   try {
-    const lookout = await getLookoutById({ id });
-    if (!lookout) return null;
+    const task = await getTaskById({ id });
+    if (!task) return null;
 
-    const runHistory = (lookout.runHistory as any[]) || [];
+    const runHistory = (task.runHistory as any[]) || [];
     
     return {
       totalRuns: runHistory.length,
@@ -880,17 +880,17 @@ export async function getLookoutRunStats({ id }: { id: string }) {
       ).length,
     };
   } catch (error) {
-    console.error('Error getting lookout run stats:', error);
+    console.error('Error getting task run stats:', error);
     return null;
   }
 }
 
-export async function deleteLookout({ id }: { id: string }) {
+export async function deleteTask({ id }: { id: string }) {
   try {
-    const [deletedLookout] = await db.delete(lookout).where(eq(lookout.id, id)).returning();
+    const [deletedTask] = await db.delete(tasks).where(eq(tasks.id, id)).returning();
 
-    return deletedLookout;
+    return deletedTask;
   } catch (error) {
-    throw new ChatSDKError('bad_request:database', 'Failed to delete lookout');
+    throw new ChatSDKError('bad_request:database', 'Failed to delete task');
   }
 }

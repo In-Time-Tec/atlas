@@ -19,24 +19,25 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useRouter } from 'next/navigation';
 import { useUserData } from '@/hooks/use-user-data';
-import { useLookouts } from '@/hooks/use-lookouts';
-import { SidebarProvider } from '@/components/ui/sidebar';
-import { LookoutDetailsSidebar } from './components/lookout-details-sidebar';
+import { useTasks } from '@/hooks/use-tasks';
+import { AppSidebar } from '@/components/app-sidebar';
+import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
+import { PageHeader } from '@/components/page-header';
+import { TaskDetailsSidebar } from './components/task-details-sidebar';
 import { toast } from 'sonner';
 
 // Import our new components
-import { Navbar } from './components/navbar';
 import { LoadingSkeletons } from './components/loading-skeleton';
-import { NoActiveLookoutsEmpty, NoArchivedLookoutsEmpty } from './components/empty-state';
+import { NoActiveTasksEmpty, NoArchivedTasksEmpty } from './components/empty-state';
 import { TotalLimitWarning, DailyLimitWarning } from './components/warning-card';
-import { LookoutCard } from './components/lookout-card';
+import { TaskCard } from './components/task-card';
 import { ProUpgradeScreen } from './components/pro-upgrade-screen';
-import { LookoutForm } from './components/lookout-form';
-import { useLookoutForm } from './hooks/use-lookout-form';
-import { getRandomExamples, LOOKOUT_LIMITS, timezoneOptions } from './constants';
+import { TaskForm } from './components/task-form';
+import { useTaskForm } from './hooks/use-task-form';
+import { getRandomExamples, TASK_LIMITS, timezoneOptions } from './constants';
 import { formatFrequency } from './utils/time-utils';
 
-interface Lookout {
+interface Task {
   id: string;
   title: string;
   prompt: string;
@@ -50,37 +51,37 @@ interface Lookout {
   cronSchedule?: string;
 }
 
-export default function LookoutPage() {
+export default function TaskPage() {
   const [activeTab, setActiveTab] = React.useState('active');
 
   // Random examples state
   const [randomExamples, setRandomExamples] = React.useState(() => getRandomExamples(3));
 
-  // Sidebar state for lookout details
-  const [selectedLookout, setSelectedLookout] = React.useState<Lookout | null>(null);
+  // Sidebar state for task details
+  const [selectedTask, setSelectedTask] = React.useState<Task | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
 
   // Delete dialog state
-  const [lookoutToDelete, setLookoutToDelete] = React.useState<string | null>(null);
+  const [taskToDelete, setTaskToDelete] = React.useState<string | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
 
   // Authentication and Pro status
-  const { user, isProUser, isLoading: isProStatusLoading } = useUserData();
+  const { user, subscriptionData, isProUser, isLoading: isProStatusLoading } = useUserData();
   const router = useRouter();
 
-  // Lookouts data and mutations
+  // Tasks data and mutations
   const {
-    lookouts: allLookouts,
+    tasks: allTasks,
     isLoading,
     error,
-    createLookout,
+    createTask,
     updateStatus,
-    updateLookout,
-    deleteLookout,
-    testLookout,
+    updateTask,
+    deleteTask,
+    testTask,
     manualRefresh,
     isPending: isMutating,
-  } = useLookouts();
+  } = useTasks();
 
   // Detect user timezone on client with fallback to available options
   const [detectedTimezone, setDetectedTimezone] = React.useState<string>('UTC');
@@ -153,7 +154,7 @@ export default function LookoutPage() {
   }, []);
 
   // Form logic hook
-  const formHook = useLookoutForm(detectedTimezone);
+  const formHook = useTaskForm(detectedTimezone);
 
   // Redirect non-authenticated users
   React.useEffect(() => {
@@ -165,23 +166,23 @@ export default function LookoutPage() {
   // Handle error display
   React.useEffect(() => {
     if (error) {
-      toast.error('Failed to load lookouts');
+      toast.error('Failed to load tasks');
     }
   }, [error]);
 
   // Calculate limits and counts
-  const activeDailyLookouts = allLookouts.filter(
-    (l: Lookout) => l.frequency === 'daily' && l.status === 'active',
+  const activeDailyTasks = allTasks.filter(
+    (t: Task) => t.frequency === 'daily' && t.status === 'active',
   ).length;
-  const totalLookouts = allLookouts.filter((l: Lookout) => l.status !== 'archived').length;
-  const canCreateMore = totalLookouts < LOOKOUT_LIMITS.TOTAL_LOOKOUTS;
-  const canCreateDailyMore = activeDailyLookouts < LOOKOUT_LIMITS.DAILY_LOOKOUTS;
+  const totalTasks = allTasks.filter((t: Task) => t.status !== 'archived').length;
+  const canCreateMore = totalTasks < TASK_LIMITS.TOTAL_TASKS;
+  const canCreateDailyMore = activeDailyTasks < TASK_LIMITS.DAILY_TASKS;
 
-  // Filter lookouts by tab
-  const filteredLookouts = allLookouts.filter((lookout: Lookout) => {
+  // Filter tasks by tab
+  const filteredTasks = allTasks.filter((task: Task) => {
     if (activeTab === 'active')
-      return lookout.status === 'active' || lookout.status === 'paused' || lookout.status === 'running';
-    if (activeTab === 'archived') return lookout.status === 'archived';
+      return task.status === 'active' || task.status === 'paused' || task.status === 'running';
+    if (activeTab === 'archived') return task.status === 'archived';
     return true;
   });
 
@@ -191,12 +192,12 @@ export default function LookoutPage() {
   };
 
   const handleDelete = (id: string) => {
-    setLookoutToDelete(id);
+    setTaskToDelete(id);
     setIsDeleteDialogOpen(true);
   };
 
   const handleTest = (id: string) => {
-    testLookout({ id });
+    testTask({ id });
   };
 
   const handleManualRefresh = async () => {
@@ -204,38 +205,47 @@ export default function LookoutPage() {
   };
 
   const confirmDelete = () => {
-    if (lookoutToDelete) {
-      deleteLookout({ id: lookoutToDelete });
-      setLookoutToDelete(null);
+    if (taskToDelete) {
+      deleteTask({ id: taskToDelete });
+      setTaskToDelete(null);
       setIsDeleteDialogOpen(false);
     }
   };
 
-  const handleOpenLookoutDetails = (lookout: Lookout) => {
-    setSelectedLookout(lookout);
+  const handleOpenTaskDetails = (task: Task) => {
+    setSelectedTask(task);
     setIsSidebarOpen(true);
   };
 
-  const handleEditLookout = (lookout: Lookout) => {
-    formHook.populateFormForEdit(lookout);
+  const handleEditTask = (task: Task) => {
+    formHook.populateFormForEdit(task);
     setIsSidebarOpen(false);
   };
 
-  const handleLookoutChange = (newLookout: Lookout) => {
-    setSelectedLookout(newLookout);
+  const handleTaskChange = (newTask: Task) => {
+    setSelectedTask(newTask);
   };
 
   // Show loading state while checking authentication
   if (isProStatusLoading) {
     return (
-      <>
-        <Navbar user={user} isProUser={isProUser} isProStatusLoading={isProStatusLoading} showProBadge={false} />
-        <div className="flex-1 flex flex-col justify-center py-8">
-          <div className="max-w-5xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
-            <LoadingSkeletons count={3} />
+      <SidebarProvider>
+        <AppSidebar />
+        <SidebarInset className="flex flex-col h-full">
+          <PageHeader
+            title="Tasks"
+            user={user}
+            subscriptionData={subscriptionData}
+            isProUser={isProUser}
+            isProStatusLoading={isProStatusLoading}
+          />
+          <div className="flex-1 flex flex-col justify-center py-8">
+            <div className="max-w-5xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
+              <LoadingSkeletons count={3} />
+            </div>
           </div>
-        </div>
-      </>
+        </SidebarInset>
+      </SidebarProvider>
     );
   }
 
@@ -245,47 +255,51 @@ export default function LookoutPage() {
   }
 
   return (
-    <>
-      {/* Lookout Details Sidebar */}
-      {selectedLookout && (
-        <>
-          {/* Backdrop */}
-          <div
-            className={`fixed inset-0 z-40 transition-all duration-300 ease-out ${
-              isSidebarOpen
-                ? 'bg-black/20 backdrop-blur-sm opacity-100'
-                : 'bg-black/0 backdrop-blur-0 opacity-0 pointer-events-none'
-            }`}
-            onClick={() => setIsSidebarOpen(false)}
-          />
+    <SidebarProvider>
+      <AppSidebar />
+      <SidebarInset className="flex flex-col h-full">
+        <PageHeader
+          title="Tasks"
+          user={user}
+          subscriptionData={subscriptionData}
+          isProUser={isProUser}
+          isProStatusLoading={isProStatusLoading}
+        />
+        
+        {/* Task Details Sidebar */}
+        {selectedTask && (
+          <>
+            {/* Backdrop */}
+            <div
+              className={`fixed inset-0 z-40 transition-all duration-300 ease-out ${
+                isSidebarOpen
+                  ? 'bg-black/20 backdrop-blur-sm opacity-100'
+                  : 'bg-black/0 backdrop-blur-0 opacity-0 pointer-events-none'
+              }`}
+              onClick={() => setIsSidebarOpen(false)}
+            />
 
-          {/* Sidebar */}
-          <div
-            className={`fixed right-0 top-0 h-screen max-w-xl w-full bg-background border-l z-50 shadow-xl transform transition-all duration-500 ease-out ${
-              isSidebarOpen ? 'translate-x-0' : 'translate-x-full'
-            }`}
-          >
-            <SidebarProvider open={isSidebarOpen} onOpenChange={setIsSidebarOpen}>
-              <LookoutDetailsSidebar
-                lookout={selectedLookout as any}
-                allLookouts={allLookouts as any}
+            {/* Sidebar */}
+            <div
+              className={`fixed right-0 top-0 h-screen max-w-xl w-full bg-background border-l z-50 shadow-xl transform transition-all duration-500 ease-out ${
+                isSidebarOpen ? 'translate-x-0' : 'translate-x-full'
+              }`}
+            >
+              <TaskDetailsSidebar
+                task={selectedTask as any}
+                allTasks={allTasks as any}
                 isOpen={isSidebarOpen}
                 onOpenChange={setIsSidebarOpen}
-                onLookoutChange={handleLookoutChange as any}
-                onEditLookout={handleEditLookout as any}
+                onTaskChange={handleTaskChange as any}
+                onEditTask={handleEditTask as any}
                 onTest={handleTest}
               />
-            </SidebarProvider>
-          </div>
-        </>
-      )}
-
-      <div className="flex-1 min-h-screen flex flex-col justify-center">
-        {/* Navbar */}
-        <Navbar user={user} isProUser={isProUser} isProStatusLoading={isProStatusLoading} showProBadge={true} />
+            </div>
+          </>
+        )}
 
         {/* Main Content */}
-        <div className="flex-1 flex flex-col justify-center py-8">
+        <div className="flex-1 overflow-y-auto">
           <div className="max-w-5xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
             {/* Header with Tabs and Add button */}
             <div className="flex justify-between items-center mb-6">
@@ -297,17 +311,12 @@ export default function LookoutPage() {
               </Tabs>
 
               <div className="flex items-center gap-2">
-                <HugeiconsIcon icon={BinocularsIcon} size={32} color="currentColor" strokeWidth={1.5} />
-                <h1 className="text-2xl font-semibold font-be-vietnam-pro">Scira Lookout</h1>
-              </div>
-
-              <div className="flex items-center gap-2">
                 <Button
                   size="sm"
                   variant="outline"
                   onClick={handleManualRefresh}
                   disabled={isMutating}
-                  title="Refresh lookouts"
+                  title="Refresh tasks"
                 >
                   <HugeiconsIcon
                     icon={RefreshIcon}
@@ -333,19 +342,19 @@ export default function LookoutPage() {
                   <DialogContent className="sm:max-w-[580px] max-h-[90vh] overflow-y-auto">
                     <DialogHeader className="pb-4">
                       <DialogTitle className="text-lg">
-                        {formHook.editingLookout ? 'Edit Lookout' : 'Create New Lookout'}
+                        {formHook.editingTask ? 'Edit Task' : 'Create New Task'}
                       </DialogTitle>
                     </DialogHeader>
 
-                    <LookoutForm
+                    <TaskForm
                       formHook={formHook}
                       isMutating={isMutating}
-                      activeDailyLookouts={activeDailyLookouts}
-                      totalLookouts={totalLookouts}
+                      activeDailyTasks={activeDailyTasks}
+                      totalTasks={totalTasks}
                       canCreateMore={canCreateMore}
                       canCreateDailyMore={canCreateDailyMore}
-                      createLookout={createLookout}
-                      updateLookout={updateLookout}
+                      createTask={createTask}
+                      updateTask={updateTask}
                     />
                   </DialogContent>
                 </Dialog>
@@ -361,19 +370,19 @@ export default function LookoutPage() {
               <TabsContent value="active" className="space-y-6">
                 {isLoading ? (
                   <LoadingSkeletons count={3} />
-                ) : filteredLookouts.length === 0 ? (
-                  <NoActiveLookoutsEmpty />
+                ) : filteredTasks.length === 0 ? (
+                  <NoActiveTasksEmpty />
                 ) : (
                   <div className="space-y-3">
-                    {filteredLookouts.map((lookout) => (
-                      <LookoutCard
-                        key={lookout.id}
-                        lookout={lookout}
+                    {filteredTasks.map((task) => (
+                      <TaskCard
+                        key={task.id}
+                        task={task}
                         isMutating={isMutating}
                         onStatusChange={handleStatusChange}
                         onDelete={handleDelete}
                         onTest={handleTest}
-                        onOpenDetails={handleOpenLookoutDetails}
+                        onOpenDetails={handleOpenTaskDetails}
                       />
                     ))}
                   </div>
@@ -383,19 +392,19 @@ export default function LookoutPage() {
               <TabsContent value="archived">
                 {isLoading ? (
                   <LoadingSkeletons count={2} showActions={false} />
-                ) : filteredLookouts.length === 0 ? (
-                  <NoArchivedLookoutsEmpty />
+                ) : filteredTasks.length === 0 ? (
+                  <NoArchivedTasksEmpty />
                 ) : (
                   <div className="space-y-3">
-                    {filteredLookouts.map((lookout) => (
-                      <LookoutCard
-                        key={lookout.id}
-                        lookout={lookout}
+                    {filteredTasks.map((task) => (
+                      <TaskCard
+                        key={task.id}
+                        task={task}
                         isMutating={isMutating}
                         onStatusChange={handleStatusChange}
                         onDelete={handleDelete}
                         onTest={handleTest}
-                        onOpenDetails={handleOpenLookoutDetails}
+                        onOpenDetails={handleOpenTaskDetails}
                         showActions={false}
                       />
                     ))}
@@ -406,7 +415,7 @@ export default function LookoutPage() {
 
             {/* Example Cards */}
             <div className="mt-12">
-              <h2 className="text-lg font-semibold mb-4">Example Lookouts</h2>
+              <h2 className="text-lg font-semibold mb-4">Example Tasks</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 overflow-hidden">
                 {randomExamples.map((example, index) => (
                   <Card
@@ -433,29 +442,29 @@ export default function LookoutPage() {
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Lookout</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete this lookout? This action cannot be undone and will permanently remove all
-              run history.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setIsDeleteDialogOpen(false)}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={confirmDelete}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </>
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Task</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete this task? This action cannot be undone and will permanently remove all
+                run history.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setIsDeleteDialogOpen(false)}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={confirmDelete}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </SidebarInset>
+    </SidebarProvider>
   );
 }

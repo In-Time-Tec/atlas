@@ -10,7 +10,7 @@ import { StatusBadge } from './status-badge';
 import { ActionButtons } from './action-buttons';
 import { formatNextRun } from '../utils/time-utils';
 
-interface Lookout {
+interface Task {
   id: string;
   title: string;
   prompt: string;
@@ -24,27 +24,27 @@ interface Lookout {
   cronSchedule?: string;
 }
 
-interface LookoutCardProps {
-  lookout: Lookout;
+interface TaskCardProps {
+  task: Task;
   isMutating?: boolean;
   onStatusChange: (id: string, status: 'active' | 'paused' | 'archived' | 'running') => void;
   onDelete: (id: string) => void;
   onTest: (id: string) => void;
-  onOpenDetails: (lookout: Lookout) => void;
+  onOpenDetails: (task: Task) => void;
   showActions?: boolean;
 }
 
-export function LookoutCard({
-  lookout,
+export function TaskCard({
+  task,
   isMutating = false,
   onStatusChange,
   onDelete,
   onTest,
   onOpenDetails,
   showActions = true,
-}: LookoutCardProps) {
+}: TaskCardProps) {
   const handleCardClick = () => {
-    onOpenDetails(lookout);
+    onOpenDetails(task);
   };
 
   const handleActionClick = (e: React.MouseEvent) => {
@@ -54,12 +54,12 @@ export function LookoutCard({
   return (
     <Card
       className={`shadow-none border border-primary/50 cursor-pointer relative overflow-hidden hover:border-primary/40 ${
-        lookout.status === 'running' ? 'border-primary/30' : ''
-      } ${lookout.status === 'archived' ? 'opacity-75' : ''}`}
+        task.status === 'running' ? 'border-primary/30' : ''
+      } ${task.status === 'archived' ? 'opacity-75' : ''}`}
       onClick={handleCardClick}
     >
-      {/* Border trail for running lookouts */}
-      {lookout.status === 'running' && (
+      {/* Border trail for running tasks */}
+      {task.status === 'running' && (
         <BorderTrail
           className="bg-primary/60"
           size={40}
@@ -75,18 +75,18 @@ export function LookoutCard({
         <div className="flex items-start justify-between">
           <div className="flex-1">
             <CardTitle className="text-base font-medium hover:text-primary transition-colors">
-              {lookout.title}
+              {task.title}
             </CardTitle>
             <CardDescription className="text-sm">
-              <StatusBadge status={lookout.status} />
+              <StatusBadge status={task.status} />
             </CardDescription>
           </div>
 
           {showActions && (
             <div onClick={handleActionClick}>
               <ActionButtons
-                lookoutId={lookout.id}
-                status={lookout.status}
+                taskId={task.id}
+                status={task.status}
                 isMutating={isMutating}
                 onStatusChange={onStatusChange}
                 onDelete={onDelete}
@@ -100,21 +100,21 @@ export function LookoutCard({
       <CardContent className="pt-0">
         <div className="space-y-1">
           {/* Next run information */}
-          {lookout.nextRunAt && lookout.status === 'active' && (
+          {task.nextRunAt && task.status === 'active' && (
             <p className="text-xs text-muted-foreground">
-              Next Run: {formatNextRun(lookout.nextRunAt, lookout.timezone)}
+              Next Run: {formatNextRun(task.nextRunAt, task.timezone)}
             </p>
           )}
 
           {/* Last run information */}
-          {lookout.lastRunAt && (
+          {task.lastRunAt && (
             <div className="flex items-center gap-2">
               <p className="text-xs text-muted-foreground">
-                Last Run: {formatNextRun(lookout.lastRunAt, lookout.timezone)}
+                Last Run: {formatNextRun(task.lastRunAt, task.timezone)}
               </p>
-              {lookout.lastRunChatId && (
+              {task.lastRunChatId && (
                 <Link
-                  href={`/search/${lookout.lastRunChatId}`}
+                  href={`/${task.lastRunChatId}`}
                   className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-primary/10 text-primary rounded-md hover:bg-primary/20 transition-colors"
                   onClick={(e) => e.stopPropagation()}
                 >
@@ -126,7 +126,7 @@ export function LookoutCard({
           )}
 
           {/* Completed state for once frequency */}
-          {!lookout.lastRunAt && lookout.frequency === 'once' && lookout.status === 'paused' && (
+          {!task.lastRunAt && task.frequency === 'once' && task.status === 'paused' && (
             <p className="text-xs text-muted-foreground">Completed</p>
           )}
         </div>

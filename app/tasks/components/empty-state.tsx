@@ -43,22 +43,22 @@ export function EmptyState({
 }
 
 // Preset empty states for common scenarios
-export function NoActiveLookoutsEmpty() {
+export function NoActiveTasksEmpty() {
   return (
     <EmptyState
       icon={BinocularsIcon}
-      title="Get started by adding a lookout"
-      description="Schedule a lookout to automate searches and get reminders when they complete."
+      title="Get started by adding a task"
+      description="Schedule a task to automate searches and get reminders when they complete."
     />
   );
 }
 
-export function NoArchivedLookoutsEmpty() {
+export function NoArchivedTasksEmpty() {
   return (
     <EmptyState
       icon={Archive01Icon}
-      title="No archived lookouts"
-      description="Archived lookouts will appear here."
+      title="No archived tasks"
+      description="Archived tasks will appear here."
       variant="default"
     />
   );

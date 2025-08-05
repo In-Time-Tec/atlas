@@ -298,7 +298,7 @@ const Messages: React.FC<MessagesProps> = React.memo(
                               onClick={async () => {
                                 try {
                                   await onVisibilityChange('public');
-                                  const url = `${window.location.origin}/search/${chatId}`;
+                                  const url = `${window.location.origin}/${chatId}`;
                                   await navigator.clipboard.writeText(url);
                                   toast.success('Link copied to clipboard');
                                 } catch (error) {

@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import { DEFAULT_FORM_VALUES } from '../constants';
 import { isTimeInPast } from '../utils/time-utils';
 
-export interface LookoutFormData {
+export interface TaskFormData {
   title: string;
   prompt: string;
   frequency: 'once' | 'daily' | 'weekly' | 'monthly';
@@ -15,7 +15,7 @@ export interface LookoutFormData {
   dayOfWeek?: string;
 }
 
-export interface LookoutFormHookReturn {
+export interface TaskFormHookReturn {
   // Form state
   selectedFrequency: string;
   selectedTime: string;
@@ -24,7 +24,7 @@ export interface LookoutFormHookReturn {
   selectedDayOfWeek: string;
   selectedExample: any | null;
   isCreateDialogOpen: boolean;
-  editingLookout: any | null;
+  editingTask: any | null;
 
   // Form actions
   setSelectedFrequency: (frequency: string) => void;
@@ -34,23 +34,23 @@ export interface LookoutFormHookReturn {
   setSelectedDayOfWeek: (day: string) => void;
   setSelectedExample: (example: any | null) => void;
   setIsCreateDialogOpen: (open: boolean) => void;
-  setEditingLookout: (lookout: any | null) => void;
+  setEditingTask: (task: any | null) => void;
 
   // Form handlers
   handleDialogOpenChange: (open: boolean) => void;
   handleUseExample: (example: any) => void;
-  populateFormForEdit: (lookout: any) => void;
+  populateFormForEdit: (task: any) => void;
   resetForm: () => void;
 
   // Form submission
-  createLookoutFromForm: (formData: FormData, createLookout: any) => void;
-  updateLookoutFromForm: (formData: FormData, updateLookout: any) => void;
+  createTaskFromForm: (formData: FormData, createTask: any) => void;
+  updateTaskFromForm: (formData: FormData, updateTask: any) => void;
 
   // Validation
   validateForm: (formData: FormData) => boolean;
 }
 
-export function useLookoutForm(detectedTimezone: string = DEFAULT_FORM_VALUES.TIMEZONE): LookoutFormHookReturn {
+export function useTaskForm(detectedTimezone: string = DEFAULT_FORM_VALUES.TIMEZONE): TaskFormHookReturn {
   console.log('🎯 Form hook received detectedTimezone:', detectedTimezone);
 
   // Form state
@@ -62,16 +62,16 @@ export function useLookoutForm(detectedTimezone: string = DEFAULT_FORM_VALUES.TI
   const [selectedDayOfWeek, setSelectedDayOfWeek] = React.useState<string>(DEFAULT_FORM_VALUES.DAY_OF_WEEK);
   const [selectedExample, setSelectedExample] = React.useState<any | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = React.useState(false);
-  const [editingLookout, setEditingLookout] = React.useState<any | null>(null);
+  const [editingTask, setEditingTask] = React.useState<any | null>(null);
 
   // Update timezone when detected timezone changes
   React.useEffect(() => {
-    console.log('⚡ useEffect triggered - detectedTimezone:', detectedTimezone, 'editingLookout:', !!editingLookout);
-    if (!editingLookout) {
+    console.log('⚡ useEffect triggered - detectedTimezone:', detectedTimezone, 'editingTask:', !!editingTask);
+    if (!editingTask) {
       console.log('📝 Setting selectedTimezone to:', detectedTimezone);
       setSelectedTimezone(detectedTimezone);
     }
-  }, [detectedTimezone, editingLookout]);
+  }, [detectedTimezone, editingTask]);
 
   // Reset form to default values
   const resetForm = React.useCallback(() => {
@@ -81,24 +81,24 @@ export function useLookoutForm(detectedTimezone: string = DEFAULT_FORM_VALUES.TI
     setSelectedDate(undefined);
     setSelectedDayOfWeek(DEFAULT_FORM_VALUES.DAY_OF_WEEK as string);
     setSelectedExample(null);
-    setEditingLookout(null);
+    setEditingTask(null);
   }, [detectedTimezone]);
 
   // Handle dialog open/close with form reset
   const handleDialogOpenChange = React.useCallback(
     (open: boolean) => {
       setIsCreateDialogOpen(open);
-      if (open && !editingLookout) {
-        // Use detected timezone when opening dialog for new lookout
+      if (open && !editingTask) {
+        // Use detected timezone when opening dialog for new task
         setSelectedTimezone(detectedTimezone);
       } else if (!open) {
         resetForm();
       }
     },
-    [resetForm, editingLookout, detectedTimezone],
+    [resetForm, editingTask, detectedTimezone],
   );
 
-  // Handle using an example lookout
+  // Handle using an example task
   const handleUseExample = React.useCallback((example: any) => {
     setSelectedExample(example);
     setSelectedFrequency(example.frequency);
@@ -108,16 +108,16 @@ export function useLookoutForm(detectedTimezone: string = DEFAULT_FORM_VALUES.TI
     setIsCreateDialogOpen(true);
   }, []);
 
-  // Populate form for editing an existing lookout
-  const populateFormForEdit = React.useCallback((lookout: any) => {
-    setEditingLookout(lookout);
-    setSelectedFrequency(lookout.frequency);
-    setSelectedTimezone(lookout.timezone);
+  // Populate form for editing an existing task
+  const populateFormForEdit = React.useCallback((task: any) => {
+    setEditingTask(task);
+    setSelectedFrequency(task.frequency);
+    setSelectedTimezone(task.timezone);
 
     // Parse time from existing data or use default
-    if (lookout.cronSchedule) {
+    if (task.cronSchedule) {
       // Parse time from cron schedule if available
-      const parts = lookout.cronSchedule.split(' ');
+      const parts = task.cronSchedule.split(' ');
       const cronParts = parts[0]?.startsWith('CRON_TZ=') ? parts.slice(1) : parts;
 
       if (cronParts.length >= 2) {
@@ -127,7 +127,7 @@ export function useLookoutForm(detectedTimezone: string = DEFAULT_FORM_VALUES.TI
       }
 
       // Parse day of week for weekly frequency
-      if (lookout.frequency === 'weekly' && cronParts.length >= 5) {
+      if (task.frequency === 'weekly' && cronParts.length >= 5) {
         const dayOfWeek = cronParts[4]; // Day of week is the 5th field in cron
         setSelectedDayOfWeek(dayOfWeek);
       }
@@ -152,7 +152,7 @@ export function useLookoutForm(detectedTimezone: string = DEFAULT_FORM_VALUES.TI
     // For once frequency, validate date and time
     if (frequency === 'once') {
       if (!date) {
-        toast.error('Please select a date for one-time lookouts');
+        toast.error('Please select a date for one-time tasks');
         return false;
       }
 
@@ -164,7 +164,7 @@ export function useLookoutForm(detectedTimezone: string = DEFAULT_FORM_VALUES.TI
       // Check if the selected date and time is in the past
       const selectedDateTime = new Date(date);
       if (isTimeInPast(time, selectedDateTime)) {
-        toast.error('Cannot schedule lookout in the past');
+        toast.error('Cannot schedule task in the past');
         return false;
       }
     }
@@ -172,9 +172,9 @@ export function useLookoutForm(detectedTimezone: string = DEFAULT_FORM_VALUES.TI
     return true;
   }, []);
 
-  // Create lookout from form data
-  const createLookoutFromForm = React.useCallback(
-    (formData: FormData, createLookout: any) => {
+  // Create task from form data
+  const createTaskFromForm = React.useCallback(
+    (formData: FormData, createTask: any) => {
       if (!validateForm(formData)) return;
 
       const title = formData.get('title') as string;
@@ -191,7 +191,7 @@ export function useLookoutForm(detectedTimezone: string = DEFAULT_FORM_VALUES.TI
         adjustedTime = `${time}:${dayOfWeek}`;
       }
 
-      createLookout({
+      createTask({
         title: title.trim(),
         prompt: prompt.trim(),
         frequency: frequency as 'once' | 'daily' | 'weekly' | 'monthly',
@@ -204,10 +204,10 @@ export function useLookoutForm(detectedTimezone: string = DEFAULT_FORM_VALUES.TI
     [validateForm, handleDialogOpenChange],
   );
 
-  // Update lookout from form data
-  const updateLookoutFromForm = React.useCallback(
-    (formData: FormData, updateLookout: any) => {
-      if (!editingLookout || !validateForm(formData)) return;
+  // Update task from form data
+  const updateTaskFromForm = React.useCallback(
+    (formData: FormData, updateTask: any) => {
+      if (!editingTask || !validateForm(formData)) return;
 
       const title = formData.get('title') as string;
       const prompt = formData.get('prompt') as string;
@@ -216,8 +216,8 @@ export function useLookoutForm(detectedTimezone: string = DEFAULT_FORM_VALUES.TI
       const timezone = formData.get('timezone') as string;
       const dayOfWeek = formData.get('dayOfWeek') as string;
 
-      updateLookout({
-        id: editingLookout.id,
+      updateTask({
+        id: editingTask.id,
         title: title.trim(),
         prompt: prompt.trim(),
         frequency: frequency as 'once' | 'daily' | 'weekly' | 'monthly',
@@ -226,7 +226,7 @@ export function useLookoutForm(detectedTimezone: string = DEFAULT_FORM_VALUES.TI
         onSuccess: () => handleDialogOpenChange(false),
       });
     },
-    [editingLookout, validateForm, handleDialogOpenChange],
+    [editingTask, validateForm, handleDialogOpenChange],
   );
 
   return {
@@ -238,7 +238,7 @@ export function useLookoutForm(detectedTimezone: string = DEFAULT_FORM_VALUES.TI
     selectedDayOfWeek,
     selectedExample,
     isCreateDialogOpen,
-    editingLookout,
+    editingTask,
 
     // Setters
     setSelectedFrequency,
@@ -248,7 +248,7 @@ export function useLookoutForm(detectedTimezone: string = DEFAULT_FORM_VALUES.TI
     setSelectedDayOfWeek,
     setSelectedExample,
     setIsCreateDialogOpen,
-    setEditingLookout,
+    setEditingTask,
 
     // Handlers
     handleDialogOpenChange,
@@ -257,8 +257,8 @@ export function useLookoutForm(detectedTimezone: string = DEFAULT_FORM_VALUES.TI
     resetForm,
 
     // Form submission
-    createLookoutFromForm,
-    updateLookoutFromForm,
+    createTaskFromForm,
+    updateTaskFromForm,
 
     // Validation
     validateForm,

@@ -38,7 +38,7 @@ export function ProUpgradeScreen({ user, isProUser, isProStatusLoading }: ProUpg
               </div>
               <CardTitle className="text-xl">Pro Feature</CardTitle>
               <CardDescription>
-                Lookouts are available for Pro users only. Schedule automated searches and get notified when they
+                Tasks are available for Pro users only. Schedule automated searches and get notified when they
                 complete.
               </CardDescription>
             </CardHeader>
@@ -66,7 +66,7 @@ export function ProUpgradeScreen({ user, isProUser, isProStatusLoading }: ProUpg
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <Lightning className="h-4 w-4 text-primary" />
-                  <span>Up to 10 active lookouts</span>
+                  <span>Up to 10 active tasks</span>
                 </div>
               </div>
 

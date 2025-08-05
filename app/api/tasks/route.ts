@@ -1,4 +1,4 @@
-// /app/api/lookout/route.ts
+// /app/api/tasks/route.ts
 import { generateTitleFromUserMessage, getGroupConfig } from '@/app/actions';
 import {
   convertToCoreMessages,
@@ -15,17 +15,17 @@ import {
   saveMessages,
   incrementExtremeSearchUsage,
   updateChatTitleById,
-  getLookoutById,
-  updateLookoutLastRun,
-  updateLookout,
-  updateLookoutStatus,
+  getTaskById,
+  updateTaskLastRun,
+  updateTask,
+  updateTaskStatus,
   getUserById,
 } from '@/lib/db/queries';
 import { createResumableStreamContext, type ResumableStreamContext } from 'resumable-stream';
 import { after } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
 import { CronExpressionParser } from 'cron-parser';
-import { sendLookoutCompletionEmail } from '@/lib/email';
+import { sendTaskCompletionEmail } from '@/lib/email';
 
 // Import extreme search tool
 import { extremeSearchTool } from '@/lib/tools';
@@ -62,40 +62,40 @@ function getStreamContext() {
 }
 
 export async function POST(req: Request) {
-  console.log('🔍 Lookout API endpoint hit from QStash');
+  console.log('🔍 Tasks API endpoint hit from QStash');
 
   const requestStartTime = Date.now();
   let runDuration = 0;
   let runError: string | undefined;
 
   try {
-    const { lookoutId, prompt, userId } = await req.json();
+    const { taskId, prompt, userId } = await req.json();
 
     console.log('--------------------------------');
-    console.log('Lookout ID:', lookoutId);
+    console.log('Task ID:', taskId);
     console.log('User ID:', userId);
     console.log('Prompt:', prompt);
     console.log('--------------------------------');
 
-    // Verify lookout exists and get details with retry logic
-    let lookout: any = null;
+    // Verify task exists and get details with retry logic
+    let task: any = null;
     let retryCount = 0;
     const maxRetries = 3;
 
-    while (!lookout && retryCount < maxRetries) {
-      lookout = await getLookoutById({ id: lookoutId });
-      if (!lookout) {
+    while (!task && retryCount < maxRetries) {
+      task = await getTaskById({ id: taskId });
+      if (!task) {
         retryCount++;
         if (retryCount < maxRetries) {
-          console.log(`Lookout not found on attempt ${retryCount}, retrying in ${retryCount * 500}ms...`);
+          console.log(`Task not found on attempt ${retryCount}, retrying in ${retryCount * 500}ms...`);
           await new Promise((resolve) => setTimeout(resolve, retryCount * 500)); // Exponential backoff
         }
       }
     }
 
-    if (!lookout) {
-      console.error('Lookout not found after', maxRetries, 'attempts:', lookoutId);
-      return new Response('Lookout not found', { status: 404 });
+    if (!task) {
+      console.error('Task not found after', maxRetries, 'attempts:', taskId);
+      return new Response('Task not found', { status: 404 });
     }
 
     // Get user details
@@ -114,7 +114,7 @@ export async function POST(req: Request) {
     await saveChat({
       id: chatId,
       userId: userResult.id,
-      title: `Scheduled: ${lookout.title}`,
+      title: `Scheduled: ${task.title}`,
       visibility: 'private',
     });
 
@@ -144,9 +144,9 @@ export async function POST(req: Request) {
       createStreamId({ streamId, chatId }),
     ]);
 
-    // Set lookout status to running
-    await updateLookoutStatus({
-      id: lookoutId,
+    // Set task status to running
+    await updateTaskStatus({
+      id: taskId,
       status: 'running',
     });
 
@@ -305,9 +305,9 @@ export async function POST(req: Request) {
                   return total + (step.toolCalls?.filter(call => call.toolName === 'extreme_search').length || 0);
                 }, 0) || 0;
 
-                // Update lookout with last run info including metrics
-                await updateLookoutLastRun({
-                  id: lookoutId,
+                // Update task with last run info including metrics
+                await updateTaskLastRun({
+                  id: taskId,
                   lastRunAt: new Date(),
                   lastRunChatId: chatId,
                   runStatus: 'success',
@@ -316,33 +316,33 @@ export async function POST(req: Request) {
                   searchesPerformed,
                 });
 
-                // Calculate next run time for recurring lookouts
-                if (lookout.frequency !== 'once' && lookout.cronSchedule) {
+                // Calculate next run time for recurring tasks
+                if (task.frequency !== 'once' && task.cronSchedule) {
                   try {
                     const options = {
                       currentDate: new Date(),
-                      tz: lookout.timezone,
+                      tz: task.timezone,
                     };
 
                     // Strip CRON_TZ= prefix if present
-                    const cleanCronSchedule = lookout.cronSchedule.startsWith('CRON_TZ=')
-                      ? lookout.cronSchedule.split(' ').slice(1).join(' ')
-                      : lookout.cronSchedule;
+                    const cleanCronSchedule = task.cronSchedule.startsWith('CRON_TZ=')
+                      ? task.cronSchedule.split(' ').slice(1).join(' ')
+                      : task.cronSchedule;
 
                     const interval = CronExpressionParser.parse(cleanCronSchedule, options);
                     const nextRunAt = interval.next().toDate();
 
-                    await updateLookout({
-                      id: lookoutId,
+                    await updateTask({
+                      id: taskId,
                       nextRunAt,
                     });
                   } catch (error) {
                     console.error('Error calculating next run time:', error);
                   }
-                } else if (lookout.frequency === 'once') {
-                  // Mark one-time lookouts as paused after running
-                  await updateLookoutStatus({
-                    id: lookoutId,
+                } else if (task.frequency === 'once') {
+                  // Mark one-time tasks as paused after running
+                  await updateTaskStatus({
+                    id: taskId,
                     status: 'paused',
                   });
                 }
@@ -380,7 +380,7 @@ export async function POST(req: Request) {
                       ? trimmedResponse.substring(0, 2000) + '...' 
                       : trimmedResponse;
 
-                    await sendLookoutCompletionEmail({
+                    await sendTaskCompletionEmail({
                       to: userResult.email,
                       chatTitle: title,
                       assistantResponse: finalResponse,
@@ -391,9 +391,9 @@ export async function POST(req: Request) {
                   }
                 }
 
-                // Set lookout status back to active after successful completion
-                await updateLookoutStatus({
-                  id: lookoutId,
+                // Set task status back to active after successful completion
+                await updateTaskStatus({
+                  id: taskId,
                   status: 'active',
                 });
 
@@ -417,10 +417,10 @@ export async function POST(req: Request) {
             runDuration = Date.now() - requestStartTime;
             runError = event.error as string || 'Unknown error occurred';
             
-            // Update lookout with failed run info
+            // Update task with failed run info
             try {
-              await updateLookoutLastRun({
-                id: lookoutId,
+              await updateTaskLastRun({
+                id: taskId,
                 lastRunAt: new Date(),
                 lastRunChatId: chatId,
                 runStatus: 'error',
@@ -428,18 +428,18 @@ export async function POST(req: Request) {
                 duration: runDuration,
               });
             } catch (updateError) {
-              console.error('Failed to update lookout with error info:', updateError);
+              console.error('Failed to update task with error info:', updateError);
             }
             
-            // Set lookout status back to active on error
+            // Set task status back to active on error
             try {
-              await updateLookoutStatus({
-                id: lookoutId,
+              await updateTaskStatus({
+                id: taskId,
                 status: 'active',
               });
-              console.log('Reset lookout status to active after error');
+              console.log('Reset task status to active after error');
             } catch (statusError) {
-              console.error('Failed to reset lookout status after error:', statusError);
+              console.error('Failed to reset task status after error:', statusError);
             }
             
             const requestEndTime = Date.now();
@@ -470,7 +470,7 @@ export async function POST(req: Request) {
       return new Response(stream);
     }
   } catch (error) {
-    console.error('Error in lookout API:', error);
+    console.error('Error in tasks API:', error);
     return new Response('Internal server error', { status: 500 });
   }
 }
