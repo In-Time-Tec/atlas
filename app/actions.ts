@@ -24,12 +24,12 @@ import {
   updateCustomInstructions,
   deleteCustomInstructions,
   getPaymentsByUserId,
-  createLookout,
-  getLookoutsByUserId,
-  getLookoutById,
-  updateLookout,
-  updateLookoutStatus,
-  deleteLookout,
+  createTask,
+  getTasksByUserId,
+  getTaskById,
+  updateTask,
+  updateTaskStatus,
+  deleteTask,
 } from '@/lib/db/queries';
 import { getDiscountConfig } from '@/lib/discount';
 import { groq } from '@ai-sdk/groq';
@@ -1471,7 +1471,7 @@ function calculateOnceNextRun(time: string, timezone: string, date?: string): Da
   return targetDate;
 }
 
-export async function createScheduledLookout({
+export async function createScheduledTask({
   title,
   prompt,
   frequency,
@@ -1497,19 +1497,19 @@ export async function createScheduledLookout({
       throw new Error('Pro subscription required for scheduled searches');
     }
 
-    // Check lookout limits
-    const existingLookouts = await getLookoutsByUserId({ userId: user.id });
-    if (existingLookouts.length >= 10) {
-      throw new Error('You have reached the maximum limit of 10 lookouts');
+    // Check task limits
+    const existingTasks = await getTasksByUserId({ userId: user.id });
+    if (existingTasks.length >= 10) {
+      throw new Error('You have reached the maximum limit of 10 tasks');
     }
 
-    // Check daily lookout limit specifically
+    // Check daily task limit specifically
     if (frequency === 'daily') {
-      const activeDailyLookouts = existingLookouts.filter(
-        (lookout) => lookout.frequency === 'daily' && lookout.status === 'active',
+      const activeDailyTasks = existingTasks.filter(
+        (task) => task.frequency === 'daily' && task.status === 'active',
       );
-      if (activeDailyLookouts.length >= 5) {
-        throw new Error('You have reached the maximum limit of 5 active daily lookouts');
+      if (activeDailyTasks.length >= 5) {
+        throw new Error('You have reached the maximum limit of 5 active daily tasks');
       }
     }
 
@@ -1536,8 +1536,8 @@ export async function createScheduledLookout({
       nextRunAt = calculateNextRun(cronSchedule, timezone);
     }
 
-    // Create lookout in database first
-    const lookout = await createLookout({
+    // Create task in database first
+    const task = await createTask({
       userId: user.id,
       title,
       prompt,
@@ -1548,16 +1548,16 @@ export async function createScheduledLookout({
       qstashScheduleId: undefined, // Will be updated if needed
     });
 
-    console.log('📝 Created lookout in database:', lookout.id, 'Now scheduling with QStash...');
+    console.log('📝 Created task in database:', task.id, 'Now scheduling with QStash...');
 
     // Small delay to ensure database transaction is committed
     await new Promise((resolve) => setTimeout(resolve, 100));
 
     // Create QStash schedule for all frequencies (recurring and once)
-    if (lookout.id) {
+    if (task.id) {
       try {
         if (frequency === 'once') {
-          console.log('⏰ Creating QStash one-time execution for lookout:', lookout.id);
+          console.log('⏰ Creating QStash one-time execution for task:', task.id);
           console.log('📅 Scheduled time:', nextRunAt.toISOString());
 
           const delay = Math.floor((nextRunAt.getTime() - Date.now()) / 1000); // Delay in seconds
@@ -1565,9 +1565,9 @@ export async function createScheduledLookout({
 
           if (delay > 0) {
             await qstash.publish({
-              url: `https://scira.ai/api/lookout`,
+              url: `https://scira.ai/api/tasks`,
               body: JSON.stringify({
-                lookoutId: lookout.id,
+                taskId: task.id,
                 prompt,
                 userId: user.id,
               }),
@@ -1578,8 +1578,8 @@ export async function createScheduledLookout({
             });
 
             console.log(
-              '✅ QStash one-time execution scheduled for lookout:',
-              lookout.id,
+              '✅ QStash one-time execution scheduled for task:',
+              task.id,
               'with delay:',
               minimumDelay,
               'seconds',
@@ -1591,15 +1591,15 @@ export async function createScheduledLookout({
             throw new Error('Cannot schedule for a time in the past');
           }
         } else {
-          console.log('⏰ Creating QStash recurring schedule for lookout:', lookout.id);
+          console.log('⏰ Creating QStash recurring schedule for task:', task.id);
           console.log('📅 Cron schedule with timezone:', cronSchedule);
 
           const scheduleResponse = await qstash.schedules.create({
-            destination: `https://scira.ai/api/lookout`,
+            destination: `https://scira.ai/api/tasks`,
             method: 'POST',
             cron: cronSchedule,
             body: JSON.stringify({
-              lookoutId: lookout.id,
+              taskId: task.id,
               prompt,
               userId: user.id,
             }),
@@ -1608,64 +1608,64 @@ export async function createScheduledLookout({
             },
           });
 
-          console.log('✅ QStash recurring schedule created:', scheduleResponse.scheduleId, 'for lookout:', lookout.id);
+          console.log('✅ QStash recurring schedule created:', scheduleResponse.scheduleId, 'for task:', task.id);
 
-          // Update lookout with QStash schedule ID
-          await updateLookout({
-            id: lookout.id,
+          // Update task with QStash schedule ID
+          await updateTask({
+            id: task.id,
             qstashScheduleId: scheduleResponse.scheduleId,
           });
 
-          lookout.qstashScheduleId = scheduleResponse.scheduleId;
+          task.qstashScheduleId = scheduleResponse.scheduleId;
         }
       } catch (qstashError) {
         console.error('Error creating QStash schedule:', qstashError);
-        // Delete the lookout if QStash creation fails
-        await deleteLookout({ id: lookout.id });
+        // Delete the task if QStash creation fails
+        await deleteTask({ id: task.id });
         throw new Error(
           `Failed to ${frequency === 'once' ? 'schedule one-time search' : 'create recurring schedule'}. Please try again.`,
         );
       }
     }
 
-    return { success: true, lookout };
+    return { success: true, task };
   } catch (error) {
-    console.error('Error creating scheduled lookout:', error);
+    console.error('Error creating scheduled task:', error);
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
   }
 }
 
-export async function getUserLookouts() {
+export async function getUserTasks() {
   try {
     const user = await getCurrentUser();
     if (!user) {
       throw new Error('Authentication required');
     }
 
-    const lookouts = await getLookoutsByUserId({ userId: user.id });
+    const tasks = await getTasksByUserId({ userId: user.id });
 
-    // Update next run times for active lookouts
-    const updatedLookouts = lookouts.map((lookout) => {
-      if (lookout.status === 'active' && lookout.cronSchedule && lookout.frequency !== 'once') {
+    // Update next run times for active tasks
+    const updatedTasks = tasks.map((task) => {
+      if (task.status === 'active' && task.cronSchedule && task.frequency !== 'once') {
         try {
-          const nextRunAt = calculateNextRun(lookout.cronSchedule, lookout.timezone);
-          return { ...lookout, nextRunAt };
+          const nextRunAt = calculateNextRun(task.cronSchedule, task.timezone);
+          return { ...task, nextRunAt };
         } catch (error) {
-          console.error('Error calculating next run for lookout:', lookout.id, error);
-          return lookout;
+          console.error('Error calculating next run for task:', task.id, error);
+          return task;
         }
       }
-      return lookout;
+      return task;
     });
 
-    return { success: true, lookouts: updatedLookouts };
+    return { success: true, tasks: updatedTasks };
   } catch (error) {
-    console.error('Error getting user lookouts:', error);
+    console.error('Error getting user tasks:', error);
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
   }
 }
 
-export async function updateLookoutStatusAction({
+export async function updateTaskStatusAction({
   id,
   status,
 }: {
@@ -1678,26 +1678,26 @@ export async function updateLookoutStatusAction({
       throw new Error('Authentication required');
     }
 
-    // Get lookout to verify ownership
-    const lookout = await getLookoutById({ id });
-    if (!lookout || lookout.userId !== user.id) {
-      throw new Error('Lookout not found or access denied');
+    // Get task to verify ownership
+    const task = await getTaskById({ id });
+    if (!task || task.userId !== user.id) {
+      throw new Error('Task not found or access denied');
     }
 
     // Update QStash schedule status if it exists
-    if (lookout.qstashScheduleId) {
+    if (task.qstashScheduleId) {
       try {
         if (status === 'paused') {
-          await qstash.schedules.pause({ schedule: lookout.qstashScheduleId });
+          await qstash.schedules.pause({ schedule: task.qstashScheduleId });
         } else if (status === 'active') {
-          await qstash.schedules.resume({ schedule: lookout.qstashScheduleId });
+          await qstash.schedules.resume({ schedule: task.qstashScheduleId });
           // Update next run time when resuming
-          if (lookout.cronSchedule) {
-            const nextRunAt = calculateNextRun(lookout.cronSchedule, lookout.timezone);
-            await updateLookout({ id, nextRunAt });
+          if (task.cronSchedule) {
+            const nextRunAt = calculateNextRun(task.cronSchedule, task.timezone);
+            await updateTask({ id, nextRunAt });
           }
         } else if (status === 'archived') {
-          await qstash.schedules.delete(lookout.qstashScheduleId);
+          await qstash.schedules.delete(task.qstashScheduleId);
         }
       } catch (qstashError) {
         console.error('Error updating QStash schedule:', qstashError);
@@ -1706,15 +1706,15 @@ export async function updateLookoutStatusAction({
     }
 
     // Update database
-    const updatedLookout = await updateLookoutStatus({ id, status });
-    return { success: true, lookout: updatedLookout };
+    const updatedTask = await updateTaskStatus({ id, status });
+    return { success: true, task: updatedTask };
   } catch (error) {
-    console.error('Error updating lookout status:', error);
+    console.error('Error updating task status:', error);
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
   }
 }
 
-export async function updateLookoutAction({
+export async function updateTaskAction({
   id,
   title,
   prompt,
@@ -1737,21 +1737,21 @@ export async function updateLookoutAction({
       throw new Error('Authentication required');
     }
 
-    // Get lookout to verify ownership
-    const lookout = await getLookoutById({ id });
-    if (!lookout || lookout.userId !== user.id) {
-      throw new Error('Lookout not found or access denied');
+    // Get task to verify ownership
+    const task = await getTaskById({ id });
+    if (!task || task.userId !== user.id) {
+      throw new Error('Task not found or access denied');
     }
 
-    // Check daily lookout limit if changing to daily frequency
-    if (frequency === 'daily' && lookout.frequency !== 'daily') {
-      const existingLookouts = await getLookoutsByUserId({ userId: user.id });
-      const activeDailyLookouts = existingLookouts.filter(
-        (existingLookout) =>
-          existingLookout.frequency === 'daily' && existingLookout.status === 'active' && existingLookout.id !== id,
+    // Check daily task limit if changing to daily frequency
+    if (frequency === 'daily' && task.frequency !== 'daily') {
+      const existingTasks = await getTasksByUserId({ userId: user.id });
+      const activeDailyTasks = existingTasks.filter(
+        (existingTask) =>
+          existingTask.frequency === 'daily' && existingTask.status === 'active' && existingTask.id !== id,
       );
-      if (activeDailyLookouts.length >= 5) {
-        throw new Error('You have reached the maximum limit of 5 active daily lookouts');
+      if (activeDailyTasks.length >= 5) {
+        throw new Error('You have reached the maximum limit of 5 active daily tasks');
       }
     }
 
@@ -1781,21 +1781,21 @@ export async function updateLookoutAction({
     }
 
     // Update QStash schedule if it exists and frequency/time changed
-    if (lookout.qstashScheduleId && frequency !== 'once') {
+    if (task.qstashScheduleId && frequency !== 'once') {
       try {
         // Delete old schedule
-        await qstash.schedules.delete(lookout.qstashScheduleId);
+        await qstash.schedules.delete(task.qstashScheduleId);
 
-        console.log('⏰ Recreating QStash schedule for lookout:', id);
+        console.log('⏰ Recreating QStash schedule for task:', id);
         console.log('📅 Updated cron schedule with timezone:', cronSchedule);
 
         // Create new schedule with updated cron
         const scheduleResponse = await qstash.schedules.create({
-          destination: `https://scira.ai/api/lookout`,
+          destination: `https://scira.ai/api/tasks`,
           method: 'POST',
           cron: cronSchedule,
           body: JSON.stringify({
-            lookoutId: id,
+            taskId: id,
             prompt: prompt.trim(),
             userId: user.id,
           }),
@@ -1805,7 +1805,7 @@ export async function updateLookoutAction({
         });
 
         // Update database with new details
-        const updatedLookout = await updateLookout({
+        const updatedTask = await updateTask({
           id,
           title: title.trim(),
           prompt: prompt.trim(),
@@ -1816,14 +1816,14 @@ export async function updateLookoutAction({
           qstashScheduleId: scheduleResponse.scheduleId,
         });
 
-        return { success: true, lookout: updatedLookout };
+        return { success: true, task: updatedTask };
       } catch (qstashError) {
         console.error('Error updating QStash schedule:', qstashError);
         throw new Error('Failed to update schedule. Please try again.');
       }
     } else {
       // Update database only
-      const updatedLookout = await updateLookout({
+      const updatedTask = await updateTask({
         id,
         title: title.trim(),
         prompt: prompt.trim(),
@@ -1833,31 +1833,31 @@ export async function updateLookoutAction({
         nextRunAt,
       });
 
-      return { success: true, lookout: updatedLookout };
+      return { success: true, task: updatedTask };
     }
   } catch (error) {
-    console.error('Error updating lookout:', error);
+    console.error('Error updating task:', error);
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
   }
 }
 
-export async function deleteLookoutAction({ id }: { id: string }) {
+export async function deleteTaskAction({ id }: { id: string }) {
   try {
     const user = await getCurrentUser();
     if (!user) {
       throw new Error('Authentication required');
     }
 
-    // Get lookout to verify ownership
-    const lookout = await getLookoutById({ id });
-    if (!lookout || lookout.userId !== user.id) {
-      throw new Error('Lookout not found or access denied');
+    // Get task to verify ownership
+    const task = await getTaskById({ id });
+    if (!task || task.userId !== user.id) {
+      throw new Error('Task not found or access denied');
     }
 
     // Delete QStash schedule if it exists
-    if (lookout.qstashScheduleId) {
+    if (task.qstashScheduleId) {
       try {
-        await qstash.schedules.delete(lookout.qstashScheduleId);
+        await qstash.schedules.delete(task.qstashScheduleId);
       } catch (error) {
         console.error('Error deleting QStash schedule:', error);
         // Continue with database deletion even if QStash deletion fails
@@ -1865,52 +1865,52 @@ export async function deleteLookoutAction({ id }: { id: string }) {
     }
 
     // Delete from database
-    const deletedLookout = await deleteLookout({ id });
-    return { success: true, lookout: deletedLookout };
+    const deletedTask = await deleteTask({ id });
+    return { success: true, task: deletedTask };
   } catch (error) {
-    console.error('Error deleting lookout:', error);
+    console.error('Error deleting task:', error);
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
   }
 }
 
-export async function testLookoutAction({ id }: { id: string }) {
+export async function testTaskAction({ id }: { id: string }) {
   try {
     const user = await getCurrentUser();
     if (!user) {
       throw new Error('Authentication required');
     }
 
-    // Get lookout to verify ownership
-    const lookout = await getLookoutById({ id });
-    if (!lookout || lookout.userId !== user.id) {
-      throw new Error('Lookout not found or access denied');
+    // Get task to verify ownership
+    const task = await getTaskById({ id });
+    if (!task || task.userId !== user.id) {
+      throw new Error('Task not found or access denied');
     }
 
-    // Only allow testing of active or paused lookouts
-    if (lookout.status === 'archived' || lookout.status === 'running') {
-      throw new Error(`Cannot test lookout with status: ${lookout.status}`);
+    // Only allow testing of active or paused tasks
+    if (task.status === 'archived' || task.status === 'running') {
+      throw new Error(`Cannot test task with status: ${task.status}`);
     }
 
-    // Make a POST request to the lookout API endpoint to trigger the run
-    const response = await fetch('https://scira.ai/api/lookout', {
+    // Make a POST request to the task API endpoint to trigger the run
+    const response = await fetch('https://scira.ai/api/tasks', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        lookoutId: lookout.id,
-        prompt: lookout.prompt,
+        taskId: task.id,
+        prompt: task.prompt,
         userId: user.id,
       }),
     });
 
     if (!response.ok) {
-      throw new Error(`Failed to trigger lookout test: ${response.statusText}`);
+      throw new Error(`Failed to trigger task test: ${response.statusText}`);
     }
 
-    return { success: true, message: 'Lookout test started successfully' };
+    return { success: true, message: 'Task test started successfully' };
   } catch (error) {
-    console.error('Error testing lookout:', error);
+    console.error('Error testing task:', error);
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
   }
 }

@@ -74,7 +74,7 @@ const Navbar = memo(
 
       if (!chatId) return;
 
-      const url = `https://atlas.ai/search/${chatId}`;
+      const url = `https://atlas.ai/${chatId}`;
       navigator.clipboard.writeText(url);
       setCopied(true);
       toast.success('Link copied to clipboard');
@@ -82,7 +82,7 @@ const Navbar = memo(
       setTimeout(() => setCopied(false), 2000);
     };
 
-    const shareUrl = chatId ? `https://atlas.ai/search/${chatId}` : '';
+    const shareUrl = chatId ? `https://atlas.ai/${chatId}` : '';
 
     const handleShareLinkedIn = (e: React.MouseEvent) => {
       e.preventDefault();

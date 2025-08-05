@@ -15,30 +15,30 @@ import { ProgressRing } from '@/components/ui/progress-ring';
 import { cn } from '@/lib/utils';
 import { TimezoneSelector } from './timezone-selector';
 import { TimePicker } from './time-picker';
-import { frequencyOptions, dayOfWeekOptions, LOOKOUT_LIMITS } from '../constants';
-import { LookoutFormHookReturn } from '../hooks/use-lookout-form';
+import { frequencyOptions, dayOfWeekOptions, TASK_LIMITS } from '../constants';
+import { TaskFormHookReturn } from '../hooks/use-task-form';
 
-interface LookoutFormProps {
-  formHook: LookoutFormHookReturn;
+interface TaskFormProps {
+  formHook: TaskFormHookReturn;
   isMutating: boolean;
-  activeDailyLookouts: number;
-  totalLookouts: number;
+  activeDailyTasks: number;
+  totalTasks: number;
   canCreateMore: boolean;
   canCreateDailyMore: boolean;
-  createLookout: any;
-  updateLookout: any;
+  createTask: any;
+  updateTask: any;
 }
 
-export function LookoutForm({
+export function TaskForm({
   formHook,
   isMutating,
-  activeDailyLookouts,
-  totalLookouts,
+  activeDailyTasks,
+  totalTasks,
   canCreateMore,
   canCreateDailyMore,
-  createLookout,
-  updateLookout,
-}: LookoutFormProps) {
+  createTask,
+  updateTask,
+}: TaskFormProps) {
   const {
     selectedFrequency,
     selectedTime,
@@ -46,28 +46,28 @@ export function LookoutForm({
     selectedDate,
     selectedDayOfWeek,
     selectedExample,
-    editingLookout,
+    editingTask,
     setSelectedFrequency,
     setSelectedTime,
     setSelectedTimezone,
     setSelectedDate,
     setSelectedDayOfWeek,
-    createLookoutFromForm,
-    updateLookoutFromForm,
+    createTaskFromForm,
+    updateTaskFromForm,
   } = formHook;
 
   const handleSubmit = (formData: FormData) => {
-    if (editingLookout) {
-      updateLookoutFromForm(formData, updateLookout);
+    if (editingTask) {
+      updateTaskFromForm(formData, updateTask);
     } else {
-      createLookoutFromForm(formData, createLookout);
+      createTaskFromForm(formData, createTask);
     }
   };
 
   const isSubmitDisabled =
     isMutating ||
-    (!editingLookout && selectedFrequency === 'daily' && !canCreateDailyMore) ||
-    (!editingLookout && !canCreateMore);
+    (!editingTask && selectedFrequency === 'daily' && !canCreateDailyMore) ||
+    (!editingTask && !canCreateMore);
 
   return (
     <form action={handleSubmit} className="space-y-4">
@@ -75,9 +75,9 @@ export function LookoutForm({
       <div>
         <Input
           name="title"
-          placeholder="Enter lookout name"
+          placeholder="Enter task name"
           className="h-9"
-          defaultValue={editingLookout?.title || selectedExample?.title || ''}
+          defaultValue={editingTask?.title || selectedExample?.title || ''}
           required
         />
       </div>
@@ -203,10 +203,10 @@ export function LookoutForm({
         <div className="flex-1">
           <Textarea
             name="prompt"
-            placeholder="Enter detailed instructions for what you want the lookout to search for and analyze..."
+            placeholder="Enter detailed instructions for what you want the task to search for and analyze..."
             rows={6}
             className="resize-none text-sm h-40"
-            defaultValue={editingLookout?.prompt || selectedExample?.prompt || ''}
+            defaultValue={editingTask?.prompt || selectedExample?.prompt || ''}
             required
           />
         </div>
@@ -220,18 +220,18 @@ export function LookoutForm({
       {/* Footer */}
       <div className="flex items-center justify-between pt-2 border-t">
         <div className="flex items-center gap-3">
-          {!editingLookout && activeDailyLookouts !== undefined && totalLookouts !== undefined && (
+          {!editingTask && activeDailyTasks !== undefined && totalTasks !== undefined && (
             <div className="flex items-center gap-2">
               {selectedFrequency === 'daily' ? (
                 <ProgressRing
-                  value={activeDailyLookouts}
-                  max={LOOKOUT_LIMITS.DAILY_LOOKOUTS}
+                  value={activeDailyTasks}
+                  max={TASK_LIMITS.DAILY_TASKS}
                   size={24}
                   strokeWidth={2}
                   color={
-                    activeDailyLookouts >= LOOKOUT_LIMITS.DAILY_LOOKOUTS
+                    activeDailyTasks >= TASK_LIMITS.DAILY_TASKS
                       ? 'danger'
-                      : activeDailyLookouts >= 4
+                      : activeDailyTasks >= 4
                         ? 'warning'
                         : 'success'
                   }
@@ -239,14 +239,14 @@ export function LookoutForm({
                 />
               ) : (
                 <ProgressRing
-                  value={totalLookouts}
-                  max={LOOKOUT_LIMITS.TOTAL_LOOKOUTS}
+                  value={totalTasks}
+                  max={TASK_LIMITS.TOTAL_TASKS}
                   size={24}
                   strokeWidth={2}
                   color={
-                    totalLookouts >= LOOKOUT_LIMITS.TOTAL_LOOKOUTS
+                    totalTasks >= TASK_LIMITS.TOTAL_TASKS
                       ? 'danger'
-                      : totalLookouts >= 8
+                      : totalTasks >= 8
                         ? 'warning'
                         : 'primary'
                   }
@@ -255,15 +255,15 @@ export function LookoutForm({
               )}
               <div className="text-xs text-muted-foreground">
                 {selectedFrequency === 'daily'
-                  ? `${Math.max(0, LOOKOUT_LIMITS.DAILY_LOOKOUTS - activeDailyLookouts)} daily remaining`
-                  : `${LOOKOUT_LIMITS.TOTAL_LOOKOUTS - totalLookouts} remaining`}
+                  ? `${Math.max(0, TASK_LIMITS.DAILY_TASKS - activeDailyTasks)} daily remaining`
+                  : `${TASK_LIMITS.TOTAL_TASKS - totalTasks} remaining`}
               </div>
             </div>
           )}
         </div>
 
         <Button type="submit" size="sm" disabled={isSubmitDisabled}>
-          {editingLookout
+          {editingTask
             ? isMutating
               ? 'Updating...'
               : 'Update'

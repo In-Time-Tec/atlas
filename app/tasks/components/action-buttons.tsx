@@ -8,7 +8,7 @@ import { BorderTrail } from '@/components/core/border-trail';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface ActionButtonsProps {
-  lookoutId: string;
+  taskId: string;
   status: 'active' | 'paused' | 'running' | 'archived';
   isMutating?: boolean;
   onStatusChange: (id: string, status: 'active' | 'paused' | 'archived' | 'running') => void;
@@ -17,7 +17,7 @@ interface ActionButtonsProps {
 }
 
 export function ActionButtons({
-  lookoutId,
+  taskId,
   status,
   isMutating = false,
   onStatusChange,
@@ -25,18 +25,18 @@ export function ActionButtons({
   onTest,
 }: ActionButtonsProps) {
   const handleStatusChange = (newStatus: 'active' | 'paused' | 'archived' | 'running') => {
-    onStatusChange(lookoutId, newStatus);
+    onStatusChange(taskId, newStatus);
   };
 
   const handleDelete = () => {
-    onDelete(lookoutId);
+    onDelete(taskId);
   };
 
   const handleTest = () => {
-    onTest(lookoutId);
+    onTest(taskId);
   };
 
-  // Don't show actions for archived lookouts in main view - they only get delete
+  // Don't show actions for archived tasks in main view - they only get delete
   if (status === 'archived') {
     return (
       <Tooltip>
@@ -46,7 +46,7 @@ export function ActionButtons({
           </Button>
         </TooltipTrigger>
         <TooltipContent>
-          <p>Delete lookout</p>
+          <p>Delete task</p>
         </TooltipContent>
       </Tooltip>
     );
@@ -69,7 +69,7 @@ export function ActionButtons({
             </Button>
           </TooltipTrigger>
           <TooltipContent>
-            <p>Pause lookout</p>
+            <p>Pause task</p>
           </TooltipContent>
         </Tooltip>
       )}
@@ -88,7 +88,7 @@ export function ActionButtons({
             </Button>
           </TooltipTrigger>
           <TooltipContent>
-            <p>Resume lookout</p>
+            <p>Resume task</p>
           </TooltipContent>
         </Tooltip>
       )}
@@ -116,7 +116,7 @@ export function ActionButtons({
             </Button>
           </TooltipTrigger>
           <TooltipContent>
-            <p>Lookout is currently running</p>
+            <p>Task is currently running</p>
           </TooltipContent>
         </Tooltip>
       )}
@@ -135,7 +135,7 @@ export function ActionButtons({
           </Button>
         </TooltipTrigger>
         <TooltipContent>
-          <p>{status === 'running' ? 'Cannot test while running' : 'Test lookout now'}</p>
+          <p>{status === 'running' ? 'Cannot test while running' : 'Test task now'}</p>
         </TooltipContent>
       </Tooltip>
 
@@ -153,7 +153,7 @@ export function ActionButtons({
           </Button>
         </TooltipTrigger>
         <TooltipContent>
-          <p>{status === 'running' ? 'Cannot archive while running' : 'Archive lookout'}</p>
+          <p>{status === 'running' ? 'Cannot archive while running' : 'Archive task'}</p>
         </TooltipContent>
       </Tooltip>
 
@@ -171,7 +171,7 @@ export function ActionButtons({
           </Button>
         </TooltipTrigger>
         <TooltipContent>
-          <p>{status === 'running' ? 'Cannot delete while running' : 'Delete lookout'}</p>
+          <p>{status === 'running' ? 'Cannot delete while running' : 'Delete task'}</p>
         </TooltipContent>
       </Tooltip>
     </div>

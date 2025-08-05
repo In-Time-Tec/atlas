@@ -30,8 +30,8 @@ import { models } from '@/ai/providers';
 import { VercelLogo } from '@/components/logos/vercel-logo';
 import { ExaLogo } from '@/components/logos/exa-logo';
 import { ElevenLabsLogo } from '@/components/logos/elevenlabs-logo';
-import { LOOKOUT_LIMITS } from '@/app/lookout/constants';
-import { PRICING } from '@/lib/constants';
+import { TASK_LIMITS } from '@/app/tasks/constants';
+import { PRICING, SEARCH_LIMITS } from '@/lib/constants';
 import {
   NavigationMenu,
   NavigationMenuItem,
@@ -444,7 +444,7 @@ export default function AboutPage() {
               <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
                 <Eye className="h-6 w-6 text-primary" />
               </div>
-              <h3 className="text-lg font-semibold mb-2">Scira Lookout</h3>
+              <h3 className="text-lg font-semibold mb-2">Scira Tasks</h3>
               <p className="text-muted-foreground">
                 Schedule automated searches to monitor trends and get regular updates on topics that matter to you.
               </p>
@@ -611,7 +611,7 @@ export default function AboutPage() {
               <ul className="space-y-3 flex-1 mb-8">
                 <li className="flex items-start gap-3">
                   <div className="w-1.5 h-1.5 rounded-full bg-primary/60 mt-2 flex-shrink-0"></div>
-                  <span className="text-muted-foreground">10 searches per day</span>
+                  <span className="text-muted-foreground">{SEARCH_LIMITS.DAILY_SEARCH_LIMIT} searches per day</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <div className="w-1.5 h-1.5 rounded-full bg-primary/60 mt-2 flex-shrink-0"></div>
@@ -627,7 +627,7 @@ export default function AboutPage() {
                 </li>
                 <li className="flex items-start gap-3">
                   <div className="w-1.5 h-1.5 rounded-full bg-primary/60 mt-2 flex-shrink-0"></div>
-                  <span className="text-muted-foreground">No Lookout access</span>
+                  <span className="text-muted-foreground">No Tasks access</span>
                 </li>
               </ul>
 
@@ -684,12 +684,12 @@ export default function AboutPage() {
                 <li className="flex items-start gap-3">
                   <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0"></div>
                   <span className="text-muted-foreground">
-                    Scira Lookout ({LOOKOUT_LIMITS.TOTAL_LOOKOUTS} automated searches)
+                    Scira Tasks ({TASK_LIMITS.TOTAL_TASKS} automated searches)
                   </span>
                 </li>
                 <li className="flex items-start gap-3">
                   <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0"></div>
-                  <span className="text-muted-foreground">Up to {LOOKOUT_LIMITS.DAILY_LOOKOUTS} daily lookouts</span>
+                  <span className="text-muted-foreground">Up to {TASK_LIMITS.DAILY_TASKS} daily tasks</span>
                 </li>
               </ul>
 

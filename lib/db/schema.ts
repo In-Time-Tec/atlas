@@ -264,8 +264,8 @@ export const fileShare = pgTable('file_share', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 
-// Lookout table for scheduled searches
-export const lookout = pgTable('lookout', {
+// Tasks table for scheduled searches
+export const tasks = pgTable('tasks', {
   id: text('id')
     .primaryKey()
     .$defaultFn(() => generateId()),

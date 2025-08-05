@@ -9,7 +9,7 @@ interface LoadingSkeletonProps {
   showActions?: boolean;
 }
 
-export function LookoutSkeleton({ showActions = true }: { showActions?: boolean }) {
+export function TaskSkeleton({ showActions = true }: { showActions?: boolean }) {
   return (
     <Card className="shadow-none">
       <CardHeader className="pb-3">
@@ -48,7 +48,7 @@ export function LoadingSkeletons({ count = 3, showActions = true }: LoadingSkele
   return (
     <div className="space-y-3">
       {Array.from({ length: validCount }).map((_, index) => (
-        <LookoutSkeleton key={index} showActions={showActions} />
+        <TaskSkeleton key={index} showActions={showActions} />
       ))}
     </div>
   );

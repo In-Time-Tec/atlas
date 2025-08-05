@@ -79,7 +79,7 @@ export const timezoneOptions = [
   { value: 'America/Caracas', label: 'Venezuela Time (Caracas)' },
 ];
 
-export const allExampleLookouts = [
+export const allExampleTasks = [
   {
     title: 'Daily AI News Digest',
     prompt:
@@ -184,7 +184,7 @@ export const allExampleLookouts = [
 
 // Function to get 3 random examples using Fisher-Yates shuffle
 export function getRandomExamples(count: number = 3) {
-  const shuffled = [...allExampleLookouts];
+  const shuffled = [...allExampleTasks];
 
   // Fisher-Yates shuffle algorithm
   for (let i = shuffled.length - 1; i > 0; i--) {
@@ -196,11 +196,11 @@ export function getRandomExamples(count: number = 3) {
 }
 
 // For backward compatibility, export a default set of examples
-export const exampleLookouts = getRandomExamples(3);
+export const exampleTasks = getRandomExamples(3);
 
-export const LOOKOUT_LIMITS = {
-  TOTAL_LOOKOUTS: 10,
-  DAILY_LOOKOUTS: 5,
+export const TASK_LIMITS = {
+  TOTAL_TASKS: 10,
+  DAILY_TASKS: 5,
 } as const;
 
 export const DEFAULT_FORM_VALUES = {

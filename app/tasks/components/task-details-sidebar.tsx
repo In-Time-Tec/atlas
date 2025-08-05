@@ -23,7 +23,7 @@ import { BorderTrail } from '@/components/core/border-trail';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import Link from 'next/link';
 
-interface LookoutRun {
+interface TaskRun {
   runAt: string;
   chatId: string;
   status: 'success' | 'error' | 'timeout';
@@ -33,7 +33,7 @@ interface LookoutRun {
   searchesPerformed?: number;
 }
 
-interface LookoutWithHistory {
+interface TaskWithHistory {
   id: string;
   title: string;
   prompt: string;
@@ -43,31 +43,31 @@ interface LookoutWithHistory {
   status: 'active' | 'paused' | 'archived' | 'running';
   lastRunAt?: Date | null;
   lastRunChatId?: string | null;
-  runHistory: LookoutRun[];
+  runHistory: TaskRun[];
   createdAt: Date;
   updatedAt: Date;
 }
 
-interface LookoutDetailsSidebarProps {
-  lookout: LookoutWithHistory;
-  allLookouts: LookoutWithHistory[];
+interface TaskDetailsSidebarProps {
+  task: TaskWithHistory;
+  allTasks: TaskWithHistory[];
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  onLookoutChange?: (lookout: LookoutWithHistory) => void;
-  onEditLookout?: (lookout: LookoutWithHistory) => void;
+  onTaskChange?: (task: TaskWithHistory) => void;
+  onEditTask?: (task: TaskWithHistory) => void;
   onTest?: (id: string) => void;
 }
 
-export function LookoutDetailsSidebar({
-  lookout,
-  allLookouts,
+export function TaskDetailsSidebar({
+  task,
+  allTasks,
   isOpen,
   onOpenChange,
-  onLookoutChange,
-  onEditLookout,
+  onTaskChange,
+  onEditTask,
   onTest,
-}: LookoutDetailsSidebarProps) {
-  const runHistory = lookout.runHistory || [];
+}: TaskDetailsSidebarProps) {
+  const runHistory = task.runHistory || [];
   const totalRuns = runHistory.length;
   const successfulRuns = runHistory.filter((run) => run.status === 'success').length;
   const failedRuns = runHistory.filter((run) => run.status === 'error').length;
@@ -80,8 +80,8 @@ export function LookoutDetailsSidebar({
     (run) => new Date(run.runAt) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
   ).length;
 
-  // Get currently running lookouts
-  const runningLookouts = allLookouts.filter((l) => l.status === 'running');
+  // Get currently running tasks
+  const runningTasks = allTasks.filter((t) => t.status === 'running');
 
   // Analytics view state
   const [showAnalytics, setShowAnalytics] = React.useState(false);
@@ -188,7 +188,7 @@ export function LookoutDetailsSidebar({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <HugeiconsIcon icon={Activity01Icon} size={16} color="currentColor" strokeWidth={1.5} />
-            <span className="font-medium text-sm">Lookout Details</span>
+            <span className="font-medium text-sm">Task Details</span>
           </div>
           <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)} className="h-7 w-7 p-0">
             <HugeiconsIcon icon={Cancel01Icon} size={14} color="currentColor" strokeWidth={1.5} />
@@ -233,15 +233,15 @@ export function LookoutDetailsSidebar({
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-xs text-muted-foreground">Frequency</span>
-                  <span className="text-sm font-medium capitalize">{lookout.frequency}</span>
+                  <span className="text-sm font-medium capitalize">{task.frequency}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-xs text-muted-foreground">Timezone</span>
-                  <span className="text-sm font-medium">{lookout.timezone}</span>
+                  <span className="text-sm font-medium">{task.timezone}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-xs text-muted-foreground">Status</span>
-                  <span className="text-sm font-medium capitalize">{lookout.status}</span>
+                  <span className="text-sm font-medium capitalize">{task.status}</span>
                 </div>
               </div>
             </div>
@@ -273,21 +273,21 @@ export function LookoutDetailsSidebar({
         ) : (
           /* Normal View */
           <>
-            {/* Currently Running Lookouts */}
-            {runningLookouts.length > 0 && (
+            {/* Currently Running Tasks */}
+            {runningTasks.length > 0 && (
               <>
                 <div>
                   <h3 className="text-sm font-medium text-foreground mb-3">
-                    Currently Running ({runningLookouts.length})
+                    Currently Running ({runningTasks.length})
                   </h3>
                   <div className="space-y-2">
-                    {runningLookouts.map((runningLookout) => (
+                    {runningTasks.map((runningTask) => (
                       <div
-                        key={runningLookout.id}
+                        key={runningTask.id}
                         className={`p-3 border rounded-md cursor-pointer transition-colors hover:bg-muted/50 ${
-                          runningLookout.id === lookout.id ? 'bg-muted border-primary/30' : ''
+                          runningTask.id === task.id ? 'bg-muted border-primary/30' : ''
                         }`}
-                        onClick={() => onLookoutChange?.(runningLookout)}
+                        onClick={() => onTaskChange?.(runningTask)}
                       >
                         <div className="flex items-center gap-2">
                           <div className="relative p-1 rounded border border-primary/20 overflow-hidden">
@@ -309,12 +309,12 @@ export function LookoutDetailsSidebar({
                             />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">{runningLookout.title}</p>
+                            <p className="text-sm font-medium truncate">{runningTask.title}</p>
                             <p className="text-xs text-muted-foreground">
-                              {runningLookout.frequency} • {runningLookout.timezone}
+                              {runningTask.frequency} • {runningTask.timezone}
                             </p>
                           </div>
-                          {runningLookout.id === lookout.id && (
+                          {runningTask.id === task.id && (
                             <Badge variant="outline" className="text-xs">
                               Current
                             </Badge>
@@ -331,24 +331,24 @@ export function LookoutDetailsSidebar({
             {/* Basic Info */}
             <div>
               <div className="mb-4">
-                <h2 className="text-base font-semibold text-foreground mb-2">{lookout.title}</h2>
+                <h2 className="text-base font-semibold text-foreground mb-2">{task.title}</h2>
                 <div className="flex items-center gap-2">
-                  {getStatusBadge(lookout.status)}
+                  {getStatusBadge(task.status)}
                   <Badge variant="outline" className="text-xs">
-                    {lookout.frequency}
+                    {task.frequency}
                   </Badge>
                 </div>
               </div>
 
               <div className="space-y-2 text-xs text-muted-foreground mb-4">
-                <p>Created {format(new Date(lookout.createdAt), 'MMM d, yyyy')}</p>
-                {lookout.nextRunAt && lookout.status === 'active' && (
-                  <p>Next run {format(new Date(lookout.nextRunAt), 'MMM d, h:mm a')}</p>
+                <p>Created {format(new Date(task.createdAt), 'MMM d, yyyy')}</p>
+                {task.nextRunAt && task.status === 'active' && (
+                  <p>Next run {format(new Date(task.nextRunAt), 'MMM d, h:mm a')}</p>
                 )}
               </div>
 
               <div className="p-3 bg-muted/50 rounded-md border gap-2">
-                <p className="text-xs leading-relaxed">{lookout.prompt}</p>
+                <p className="text-xs leading-relaxed">{task.prompt}</p>
                 <p className="text-xs leading-relaxed border-t mt-2 pt-2">Grok 4・Extreme Research</p>
               </div>
             </div>
@@ -415,7 +415,7 @@ export function LookoutDetailsSidebar({
                           </div>
                         </div>
                         {run.status === 'success' && (
-                          <Link href={`/search/${run.chatId}`}>
+                          <Link href={`/${run.chatId}`}>
                             <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
                               <HugeiconsIcon icon={ArrowUpRightIcon} size={12} color="currentColor" strokeWidth={1.5} />
                             </Button>
@@ -453,8 +453,8 @@ export function LookoutDetailsSidebar({
                 variant="outline"
                 size="sm"
                 className="flex-1 text-xs h-8"
-                onClick={() => onEditLookout?.(lookout)}
-                disabled={lookout.status === 'running'}
+                onClick={() => onEditTask?.(task)}
+                disabled={task.status === 'running'}
               >
                 <HugeiconsIcon
                   icon={Settings01Icon}
@@ -467,7 +467,7 @@ export function LookoutDetailsSidebar({
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>{lookout.status === 'running' ? 'Cannot edit while running' : 'Edit lookout settings'}</p>
+              <p>{task.status === 'running' ? 'Cannot edit while running' : 'Edit task settings'}</p>
             </TooltipContent>
           </Tooltip>
           <Tooltip>
@@ -476,8 +476,8 @@ export function LookoutDetailsSidebar({
                 variant="outline"
                 size="sm"
                 className="flex-1 text-xs h-8"
-                onClick={() => onTest?.(lookout.id)}
-                disabled={lookout.status === 'running' || lookout.status === 'archived'}
+                onClick={() => onTest?.(task.id)}
+                disabled={task.status === 'running' || task.status === 'archived'}
               >
                 <HugeiconsIcon icon={TestTubeIcon} size={14} color="currentColor" strokeWidth={1.5} className="mr-1" />
                 Test
@@ -485,10 +485,10 @@ export function LookoutDetailsSidebar({
             </TooltipTrigger>
             <TooltipContent>
               <p>
-                {lookout.status === 'running'
+                {task.status === 'running'
                   ? 'Cannot test while running'
-                  : lookout.status === 'archived'
-                    ? 'Cannot test archived lookout'
+                  : task.status === 'archived'
+                    ? 'Cannot test archived task'
                     : 'Run test now'}
               </p>
             </TooltipContent>

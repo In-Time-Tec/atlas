@@ -39,7 +39,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     description: 'A search in atlas.ai',
     openGraph: {
       title: title,
-      url: `https://atlas.ai/search/${id}`,
+      url: `https://atlas.ai/${id}`,
       description: 'A search in atlas.ai',
       siteName: 'atlas.ai',
       images: [
@@ -53,7 +53,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     twitter: {
       card: 'summary_large_image',
       title: title,
-      url: `https://atlas.ai/search/${id}`,
+      url: `https://atlas.ai/${id}`,
       description: 'A search in atlas.ai',
       siteName: 'atlas.ai',
       creator: '@atlasai',
@@ -66,7 +66,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
       ],
     },
     alternates: {
-      canonical: `https://atlas.ai/search/${id}`,
+      canonical: `https://atlas.ai/${id}`,
     },
   } as Metadata;
 }

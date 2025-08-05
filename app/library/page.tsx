@@ -3,17 +3,17 @@
 import * as React from 'react';
 import { useState, useEffect, Suspense } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Search, Grid3X3, List, Upload, FolderPlus, X, Files, HardDrive } from 'lucide-react';
+import { Search, Grid3X3, List, Upload, FolderPlus, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useUserData } from '@/hooks/use-user-data';
 import { AppSidebar } from '@/components/app-sidebar';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
+import { PageHeader } from '@/components/page-header';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 import { FileGrid } from '@/components/file-library/FileGrid';
 import { FileList } from '@/components/file-library/FileList';
@@ -33,7 +33,7 @@ function formatFileSize(bytes: number): string {
 }
 
 function LibraryPageContent() {
-  const { user, isLoading: userLoading } = useUserData();
+  const { user, subscriptionData, isProUser, isLoading: userLoading, isLoading: isProStatusLoading } = useUserData();
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
@@ -115,20 +115,6 @@ function LibraryPageContent() {
     setSelectedFolderId(folderId);
   };
 
-  const clearFolderFilter = () => {
-    setSelectedFolderId(null);
-  };
-
-  const getCurrentFolderName = () => {
-    if (!selectedFolderId) return null;
-    const folder = folders.find((f: FileLibraryFolder) => f.id === selectedFolderId);
-    return folder?.name || null;
-  };
-
-  const getTotalFileSize = () => {
-    return files.reduce((total: number, file: FileLibraryFile) => total + file.size, 0);
-  };
-
   if (userLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -145,218 +131,146 @@ function LibraryPageContent() {
   }
 
   return (
-    <div className="h-full overflow-y-auto">
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
-        <div className="space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight">File Library</h1>
-              <p className="text-muted-foreground">
-                Manage and organize your files
-                {getCurrentFolderName() && (
-                  <>
-                    {' '}
-                    in{' '}
-                    <span className="font-medium">{getCurrentFolderName()}</span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={clearFolderFilter}
-                      className="ml-2 h-6 text-xs"
-                    >
-                      Clear filter
-                    </Button>
-                  </>
-                )}
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button variant="ghost" size="sm" onClick={toggleViewMode}>
-                {viewMode === 'grid' ? <List className="w-4 h-4" /> : <Grid3X3 className="w-4 h-4" />}
-                <span className="ml-2 hidden sm:inline">
-                  {viewMode === 'grid' ? 'List' : 'Grid'}
-                </span>
-              </Button>
-              <Button onClick={toggleUploadZone} className={cn(showUpload && 'bg-accent')}>
-                <Upload className="w-4 h-4" />
-                <span className="ml-2">Upload</span>
-              </Button>
+    <>
+      <PageHeader
+        title="File Library"
+        user={user}
+        subscriptionData={subscriptionData}
+        isProUser={isProUser}
+        isProStatusLoading={isProStatusLoading}
+      />
+      <div className="flex-1 overflow-y-auto bg-background">
+        <div className="flex flex-col h-full">
+          <div className="px-6 py-5 border-b border-border/50">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Manage and organize your files</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={toggleUploadZone} 
+                  className={cn(
+                    "h-8 px-3 text-sm font-medium transition-all",
+                    showUpload && "bg-accent text-accent-foreground"
+                  )}
+                >
+                  <Upload className="w-4 h-4 mr-1.5" />
+                  Upload
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={toggleViewMode}
+                  className="h-8 w-8"
+                >
+                  {viewMode === 'grid' ? 
+                    <List className="w-4 h-4" /> : 
+                    <Grid3X3 className="w-4 h-4" />
+                  }
+                </Button>
+              </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Files</CardTitle>
-                <Files className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{files.length}</div>
-                <p className="text-xs text-muted-foreground">files in library</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Storage Used</CardTitle>
-                <HardDrive className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{formatFileSize(getTotalFileSize())}</div>
-                <p className="text-xs text-muted-foreground">across all files</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Folders</CardTitle>
-                <FolderPlus className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{folders.length}</div>
-                <p className="text-xs text-muted-foreground">organized folders</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Recent</CardTitle>
-                <Files className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {files.filter((f: FileLibraryFile) => {
-                    const fileDate = new Date(f.createdAt);
-                    const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-                    return fileDate > dayAgo;
-                  }).length}
-                </div>
-                <p className="text-xs text-muted-foreground">files added today</p>
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1">
+        <div className="flex flex-col flex-1 min-h-0">
+          <div className="px-6 py-4 border-b border-border/50">
+            <div className="relative max-w-md">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
               <Input
-                placeholder="Search files..."
+                placeholder="Search files by name..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
+                className="pl-10 h-9 bg-muted/50 border-transparent hover:bg-muted/70 focus:bg-background focus:border-border"
               />
             </div>
           </div>
 
           {showUpload && (
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Upload Files</CardTitle>
-                <Button variant="ghost" size="sm" onClick={() => setShowUpload(false)}>
-                  <X className="w-4 h-4" />
+            <div className="mx-6 mt-4 border border-border/50 rounded-lg p-4 bg-muted/30">
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="font-medium text-sm">Upload Files</h3>
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  className="h-6 w-6" 
+                  onClick={() => setShowUpload(false)}
+                >
+                  <X className="w-3 h-3" />
                 </Button>
-              </CardHeader>
-              <CardContent>
-                <FileUploadZone folderId={selectedFolderId} onUploadComplete={handleUploadComplete} />
-              </CardContent>
-            </Card>
+              </div>
+              <FileUploadZone folderId={selectedFolderId} onUploadComplete={handleUploadComplete} />
+            </div>
           )}
 
-          <div className="flex flex-col lg:flex-row gap-6">
-            <div className="lg:w-64 shrink-0">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">Folders</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
+          <Tabs defaultValue="all" className="flex-1 flex flex-col min-h-0">
+            <div className="px-6 py-3 border-b border-border/50">
+              <TabsList className="h-9 p-1 bg-muted/50">
+                <TabsTrigger value="all" className="text-sm px-3 py-1">All Files</TabsTrigger>
+                <TabsTrigger value="folders" className="text-sm px-3 py-1">Folders</TabsTrigger>
+              </TabsList>
+            </div>
+
+            <TabsContent value="all" className="flex-1 min-h-0 p-6">
+              <div className="h-full overflow-hidden">
+                {viewMode === 'grid' ? (
+                  <FileGrid
+                    files={files}
+                    selectedFiles={[]}
+                    onFileSelect={handleFileSelect}
+                    loading={filesLoading}
+                    multiple={false}
+                    mode="manage"
+                  />
+                ) : (
+                  <FileList
+                    files={files}
+                    selectedFiles={[]}
+                    onFileSelect={handleFileSelect}
+                    loading={filesLoading}
+                    multiple={false}
+                    mode="manage"
+                  />
+                )}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="folders" className="flex-1 min-h-0 p-6">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 overflow-auto">
+                {folders.map((folder: FileLibraryFolder) => (
                   <Button
-                    variant={selectedFolderId === null ? 'default' : 'ghost'}
-                    className="w-full justify-start"
-                    onClick={() => setSelectedFolderId(null)}
+                    key={folder.id}
+                    variant="outline"
+                    className="h-24 flex flex-col gap-2 p-4 border-border/50 hover:border-border hover:bg-muted/50 transition-all"
+                    onClick={() => handleFolderSelect(folder.id)}
                   >
-                    <Files className="w-4 h-4 mr-2" />
-                    All Files
+                    <FolderPlus className="w-8 h-8 text-muted-foreground" />
+                    <span className="text-sm font-medium truncate w-full">{folder.name}</span>
                   </Button>
-                  {folders.map((folder: FileLibraryFolder) => (
-                    <Button
-                      key={folder.id}
-                      variant={selectedFolderId === folder.id ? 'default' : 'ghost'}
-                      className="w-full justify-start"
-                      onClick={() => handleFolderSelect(folder.id)}
-                    >
-                      <FolderPlus className="w-4 h-4 mr-2" />
-                      <span className="truncate">{folder.name}</span>
-                    </Button>
-                  ))}
-                  {foldersLoading && (
-                    <div className="text-center py-4 text-sm text-muted-foreground">Loading folders...</div>
-                  )}
-                  {!foldersLoading && folders.length === 0 && (
-                    <div className="text-center py-4 text-sm text-muted-foreground">No folders found</div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-
-            <div className="flex-1 min-w-0">
-              <Card>
-                <CardContent className="p-6">
-                  <Tabs defaultValue="files" className="space-y-4">
-                    <TabsList>
-                      <TabsTrigger value="files">Files</TabsTrigger>
-                      <TabsTrigger value="folders">Folder Grid</TabsTrigger>
-                    </TabsList>
-
-                    <TabsContent value="files" className="space-y-4">
-                      <div className="min-h-[400px]">
-                        {viewMode === 'grid' ? (
-                          <FileGrid
-                            files={files}
-                            selectedFiles={[]}
-                            onFileSelect={handleFileSelect}
-                            loading={filesLoading}
-                            multiple={false}
-                            mode="manage"
-                          />
-                        ) : (
-                          <FileList
-                            files={files}
-                            selectedFiles={[]}
-                            onFileSelect={handleFileSelect}
-                            loading={filesLoading}
-                            multiple={false}
-                            mode="manage"
-                          />
-                        )}
-                      </div>
-                    </TabsContent>
-
-                    <TabsContent value="folders" className="space-y-4">
-                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 min-h-[400px]">
-                        {folders.map((folder: FileLibraryFolder) => (
-                          <Button
-                            key={folder.id}
-                            variant="outline"
-                            className="h-20 flex flex-col gap-2 p-4"
-                            onClick={() => handleFolderSelect(folder.id)}
-                          >
-                            <FolderPlus className="w-6 h-6" />
-                            <span className="text-xs truncate w-full">{folder.name}</span>
-                          </Button>
-                        ))}
-                        {foldersLoading && (
-                          <div className="col-span-full text-center py-8 text-muted-foreground">Loading folders...</div>
-                        )}
-                        {!foldersLoading && folders.length === 0 && (
-                          <div className="col-span-full text-center py-8 text-muted-foreground">No folders found</div>
-                        )}
-                      </div>
-                    </TabsContent>
-                  </Tabs>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
+                ))}
+                {foldersLoading && (
+                  <div className="col-span-full text-center py-16 text-muted-foreground">
+                    <div className="inline-flex items-center gap-2">
+                      <div className="w-4 h-4 border-2 border-muted-foreground/30 border-t-muted-foreground rounded-full animate-spin" />
+                      Loading folders...
+                    </div>
+                  </div>
+                )}
+                {!foldersLoading && folders.length === 0 && (
+                  <div className="col-span-full text-center py-16 text-muted-foreground">
+                    <FolderPlus className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                    <p className="font-medium">No folders found</p>
+                    <p className="text-sm mt-1">Create folders to organize your files</p>
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
     </div>
+    </>
   );
 }
 

@@ -1730,7 +1730,7 @@ const FormComponent: React.FC<FormComponentProps> = ({
         }
 
         if (user) {
-          window.history.replaceState({}, '', `/search/${chatId}`);
+          window.history.replaceState({}, '', `/${chatId}`);
         }
 
         setHasSubmitted(true);

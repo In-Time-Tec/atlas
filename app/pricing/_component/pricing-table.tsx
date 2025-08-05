@@ -9,7 +9,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { SEARCH_LIMITS, PRICING } from '@/lib/constants';
-import { LOOKOUT_LIMITS } from '@/app/lookout/constants';
+import { TASK_LIMITS } from '@/app/tasks/constants';
 import { DiscountBanner } from '@/components/ui/discount-banner';
 import { getDiscountConfigAction } from '@/app/actions';
 import { DiscountConfig } from '@/lib/discount';
@@ -296,7 +296,7 @@ export default function PricingTable({ subscriptionDetails, user }: PricingTable
                 </li>
                 <li className="flex items-center text-[15px]">
                   <div className="w-1 h-1 bg-zinc-300 dark:bg-zinc-600 rounded-full mr-4 flex-shrink-0"></div>
-                  <span className="text-zinc-700 dark:text-zinc-300">No Lookout access</span>
+                  <span className="text-zinc-700 dark:text-zinc-300">No Tasks access</span>
                 </li>
               </ul>
             </div>
@@ -453,13 +453,13 @@ export default function PricingTable({ subscriptionDetails, user }: PricingTable
                   <li className="flex items-center text-[15px]">
                     <div className="w-1 h-1 bg-black dark:bg-white rounded-full mr-4 flex-shrink-0"></div>
                     <span className="text-zinc-700 dark:text-zinc-300">
-                      Scira Lookout ({LOOKOUT_LIMITS.TOTAL_LOOKOUTS} automated searches)
+                      Scira Tasks ({TASK_LIMITS.TOTAL_TASKS} automated searches)
                     </span>
                   </li>
                   <li className="flex items-center text-[15px]">
                     <div className="w-1 h-1 bg-black dark:bg-white rounded-full mr-4 flex-shrink-0"></div>
                     <span className="text-zinc-700 dark:text-zinc-300">
-                      Up to {LOOKOUT_LIMITS.DAILY_LOOKOUTS} daily lookouts
+                      Up to {TASK_LIMITS.DAILY_TASKS} daily tasks
                     </span>
                   </li>
                 </ul>

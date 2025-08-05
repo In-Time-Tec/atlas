@@ -1,5 +1,5 @@
 export const SEARCH_LIMITS = {
-  DAILY_SEARCH_LIMIT: 10,
+  DAILY_SEARCH_LIMIT: 100,
   EXTREME_SEARCH_LIMIT: 5,
 } as const;
 

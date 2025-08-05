@@ -16,7 +16,7 @@ const SearchCompletedEmail = (props: SearchCompletedEmailProps) => {
           <Container className="max-w-[560px] mx-auto px-[24px] py-[48px] bg-[#FFFFFF] border border-solid border-neutral-300 rounded-lg my-[24px]">
             <Section className="text-center mb-6">
               <Img src="https://scira.ai/icon.png" alt="Scira AI" className="w-[48px] h-[48px] mx-auto mb-[24px]" />
-              <Text className="text-[24px] font-semibold text-[#020304] mb-[16px] m-0">Daily Lookout Complete</Text>
+              <Text className="text-[24px] font-semibold text-[#020304] mb-[16px] m-0">Daily Task Complete</Text>
               <Text className="text-[14px] font-medium text-[#374151] bg-[#F3F4F6] px-[16px] py-[8px] rounded-lg inline-block m-0 !mt-2">
                 {props.chatTitle}
               </Text>
@@ -99,7 +99,7 @@ const SearchCompletedEmail = (props: SearchCompletedEmailProps) => {
 
             <Section className="text-center mb-[40px]">
               <Button
-                href={`https://scira.ai/search/${props.chatId}`}
+                href={`https://atlas.ai/${props.chatId}`}
                 className="bg-[#020304] text-white px-[32px] py-[14px] rounded-[8px] text-[16px] font-medium no-underline inline-block box-border"
               >
                 View Full Report

@@ -530,7 +530,7 @@ export function ChatHistoryDialog({ open, onOpenChange, user }: ChatHistoryDialo
   useEffect(() => {
     if (open) {
       allChats.forEach((chat) => {
-        router.prefetch(`/search/${chat.id}`);
+        router.prefetch(`/${chat.id}`);
         console.log(`Prefetching chat ${chat.id}`);
       });
     }
@@ -544,7 +544,7 @@ export function ChatHistoryDialog({ open, onOpenChange, user }: ChatHistoryDialo
       toast.info(`Opening "${displayTitle}"...`);
       invalidateChatsCache();
       onOpenChange(false);
-      router.push(`/search/${id}`);
+      router.push(`/${id}`);
     },
     [onOpenChange],
   );

@@ -6,6 +6,7 @@ import {
   getCurrentUser,
   getCustomInstructions,
 } from '@/app/actions';
+import { SEARCH_LIMITS } from '@/lib/constants';
 import {
   convertToCoreMessages,
   streamText,
@@ -165,8 +166,7 @@ export async function POST(req: Request) {
         const shouldBypassLimits = shouldBypassRateLimits(model, user);
 
         if (!shouldBypassLimits && messageCountResult.count !== undefined) {
-          const dailyLimit = 100; // Non-pro users have a daily limit
-          if (messageCountResult.count >= dailyLimit) {
+          if (messageCountResult.count >= SEARCH_LIMITS.DAILY_SEARCH_LIMIT) {
             return new ChatSDKError('rate_limit:chat', 'Daily search limit reached').toResponse();
           }
         }
