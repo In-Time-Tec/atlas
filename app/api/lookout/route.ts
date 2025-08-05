@@ -8,7 +8,7 @@ import {
   CoreAssistantMessage,
   createDataStream,
 } from 'ai';
-import { scira } from '@/ai/providers';
+import { atlas } from '@/ai/providers';
 import {
   createStreamId,
   saveChat,
@@ -155,7 +155,7 @@ export async function POST(req: Request) {
       execute: async (dataStream) => {
         // Start streaming
         const result = streamText({
-          model: scira.languageModel('scira-grok-4'),
+          model: atlas.languageModel('atlas-grok-4'),
           messages: convertToCoreMessages([userMessage]),
           maxSteps: 2,
           maxRetries: 10,

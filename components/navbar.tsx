@@ -2,7 +2,7 @@
 
 import React, { useState, memo, useCallback, useMemo, useEffect } from 'react';
 import Link from 'next/link';
-import { Plus, GlobeHemisphereWest, Lock, Copy, Check, Share, X } from '@phosphor-icons/react';
+import { Plus, GlobeHemisphereWest, Lock, Copy, Check, Share, X, FolderOpen } from '@phosphor-icons/react';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { Crown02Icon } from '@hugeicons/core-free-icons';
 import { toast } from 'sonner';

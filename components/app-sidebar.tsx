@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { FolderOpen, Crown } from '@phosphor-icons/react';
+import { FolderOpen, Crown, Binoculars } from '@phosphor-icons/react';
 import { Search } from 'lucide-react';
 import { useUserData } from '@/hooks/use-user-data';
 import { useSession } from '@/lib/auth-client';
@@ -60,14 +60,24 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             </SidebarMenuButton>
           </SidebarMenuItem>
           {showLibrary && (
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild isActive={pathname === '/library'}>
-                <Link href="/library" className="flex items-center gap-3">
-                  <FolderOpen size={20} />
-                  <span>Library</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
+            <>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={pathname === '/lookout'}>
+                  <Link href="/lookout" className="flex items-center gap-3">
+                    <Binoculars size={20} />
+                    <span>Lookout</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={pathname === '/library'}>
+                  <Link href="/library" className="flex items-center gap-3">
+                    <FolderOpen size={20} />
+                    <span>Library</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </>
           )}
         </SidebarMenu>
       </SidebarContent>

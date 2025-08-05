@@ -33,7 +33,7 @@ function formatFileSize(bytes: number): string {
 }
 
 function LibraryPageContent() {
-  const { data: user, isLoading: userLoading } = useUserData();
+  const { user, isLoading: userLoading } = useUserData();
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
