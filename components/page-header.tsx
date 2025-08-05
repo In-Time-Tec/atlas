@@ -35,14 +35,14 @@ export function PageHeader({
 }: PageHeaderProps) {
   return (
     <header className={cn('flex h-16 shrink-0 items-center justify-between px-6 border-b border-border/50', className)}>
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-1">
         {showSidebarTrigger && (
           <>
             <SidebarTrigger className="-ml-2" />
             {title && <Separator orientation="vertical" className="h-4" />}
           </>
         )}
-        {title && <h1 className="text-lg font-semibold">{title}</h1>}
+        {title && <h1 className="text-md font-semibold">{title}</h1>}
         {leftContent && (
           <>
             <Separator orientation="vertical" className="h-4" />
