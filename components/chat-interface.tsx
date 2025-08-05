@@ -105,6 +105,7 @@ const ChatInterface = memo(
 
     const lastSubmittedQueryRef = useRef(initialState.query);
     const bottomRef = useRef<HTMLDivElement>(null);
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null!);
     const inputRef = useRef<HTMLTextAreaElement>(null!);
     const initializedRef = useRef(false);
@@ -113,7 +114,8 @@ const ChatInterface = memo(
       enabled: true,
       threshold: 100,
       behavior: 'smooth',
-      debounceMs: 100,
+      debounceMs: 50,
+      containerRef: scrollContainerRef,
     });
 
     const { data: usageData, refetch: refetchUsage } = useUsageData(user || null);
@@ -365,26 +367,25 @@ const ChatInterface = memo(
       return -1;
     }, [messages]);
 
+    // Handle autoscroll when status changes to streaming
     useEffect(() => {
       if (status === 'streaming') {
         resetManualScroll();
+      }
+    }, [status, resetManualScroll]);
+
+    // Handle autoscroll based on messages and streaming status
+    useEffect(() => {
+      // Always scroll if we're streaming and user hasn't manually scrolled
+      if (status === 'streaming' && !hasManuallyScrolled) {
         scrollToElement();
       }
-    }, [status, resetManualScroll, scrollToElement]);
-
-    useEffect(() => {
-      if (status === 'streaming' && (isAtBottom || !hasManuallyScrolled)) {
-        scrollToElement();
-      } else if (
-        messages.length > 0 &&
-        chatState.suggestedQuestions.length > 0 &&
-        (isAtBottom || !hasManuallyScrolled)
-      ) {
+      // Also scroll if user is at bottom or hasn't manually scrolled
+      else if ((isAtBottom || !hasManuallyScrolled) && messages.length > 0) {
         scrollToElement();
       }
     }, [
-      messages.length,
-      chatState.suggestedQuestions.length,
+      messages,
       status,
       isAtBottom,
       hasManuallyScrolled,
@@ -484,6 +485,7 @@ const ChatInterface = memo(
 
         <div className="flex-1 flex flex-col overflow-hidden">
           <div
+            ref={scrollContainerRef}
             className={cn(
               'flex-1 overflow-auto font-sans! scroll-smooth bg-background text-foreground transition-all duration-500 w-full overflow-x-hidden !scrollbar-thin !scrollbar-thumb-muted-foreground dark:!scrollbar-thumb-muted-foreground !scrollbar-track-transparent hover:!scrollbar-thumb-foreground dark:!hover:scrollbar-thumb-foreground',
               'flex flex-col',

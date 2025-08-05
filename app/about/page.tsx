@@ -31,7 +31,7 @@ import { VercelLogo } from '@/components/logos/vercel-logo';
 import { ExaLogo } from '@/components/logos/exa-logo';
 import { ElevenLabsLogo } from '@/components/logos/elevenlabs-logo';
 import { TASK_LIMITS } from '@/app/tasks/constants';
-import { PRICING } from '@/lib/constants';
+import { PRICING, SEARCH_LIMITS } from '@/lib/constants';
 import {
   NavigationMenu,
   NavigationMenuItem,
@@ -611,7 +611,7 @@ export default function AboutPage() {
               <ul className="space-y-3 flex-1 mb-8">
                 <li className="flex items-start gap-3">
                   <div className="w-1.5 h-1.5 rounded-full bg-primary/60 mt-2 flex-shrink-0"></div>
-                  <span className="text-muted-foreground">10 searches per day</span>
+                  <span className="text-muted-foreground">{SEARCH_LIMITS.DAILY_SEARCH_LIMIT} searches per day</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <div className="w-1.5 h-1.5 rounded-full bg-primary/60 mt-2 flex-shrink-0"></div>

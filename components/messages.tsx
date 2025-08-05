@@ -83,15 +83,6 @@ const Messages: React.FC<MessagesProps> = React.memo(
     const [reasoningVisibilityMap, setReasoningVisibilityMap] = useState<Record<string, boolean>>({});
     const [reasoningFullscreenMap, setReasoningFullscreenMap] = useState<Record<string, boolean>>({});
     const reasoningScrollRef = useRef<HTMLDivElement>(null);
-    const messagesEndRef = useRef<HTMLDivElement>(null);
-    const [hasInitialScrolled, setHasInitialScrolled] = useState(false);
-
-    useEffect(() => {
-      if (initialMessages && initialMessages.length > 0 && !hasInitialScrolled && messagesEndRef.current) {
-        messagesEndRef.current.scrollIntoView({ behavior: 'instant' });
-        setHasInitialScrolled(true);
-      }
-    }, [initialMessages, hasInitialScrolled]);
 
     const memoizedMessages = useMemo(() => {
       return messages.filter((message) => {
@@ -413,15 +404,6 @@ const Messages: React.FC<MessagesProps> = React.memo(
       ],
     );
 
-    useEffect(() => {
-      if (messagesEndRef.current) {
-        if (status === 'streaming' || status === 'submitted') {
-          messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-        } else if (hasInitialScrolled && memoizedMessages.length > 0) {
-          messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-        }
-      }
-    }, [memoizedMessages.length, status, hasInitialScrolled]);
 
     useEffect(() => {
       const activeReasoning = messages.flatMap((message, messageIndex) =>
@@ -566,7 +548,6 @@ const Messages: React.FC<MessagesProps> = React.memo(
           />
         )}
 
-        <div ref={messagesEndRef} />
       </div>
     );
   },
