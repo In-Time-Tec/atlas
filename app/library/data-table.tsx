@@ -33,6 +33,8 @@ import {
 } from '@hugeicons/core-free-icons';
 
 import { FileData } from './columns';
+import { downloadMultipleFiles } from '@/lib/utils/download';
+import { toast } from 'sonner';
 
 interface DataTableProps {
   columns: ColumnDef<FileData>[];
@@ -94,8 +96,12 @@ export function DataTable({
   const selectedFiles = table.getFilteredSelectedRowModel().rows.map((row) => row.original);
 
   const handleBulkDownload = async () => {
-    for (const file of selectedFiles) {
-      window.open(file.url, '_blank');
+    try {
+      toast.info(`Downloading ${selectedFiles.length} files...`);
+      await downloadMultipleFiles(selectedFiles);
+      toast.success('All downloads started');
+    } catch (error) {
+      toast.error('Some downloads failed');
     }
   };
 
