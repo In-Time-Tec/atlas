@@ -12,7 +12,7 @@ interface FileIconProps {
   className?: string;
 }
 
-export function FileIcon({ contentType, className = "w-5 h-5" }: FileIconProps) {
+export function FileIcon({ contentType, className = "w-4 h-4" }: FileIconProps) {
   const getIconByContentType = (type: string | null) => {
     if (!type) {
       return DefaultFileIcon;
@@ -32,7 +32,7 @@ export function FileIcon({ contentType, className = "w-5 h-5" }: FileIconProps) 
     <div className="flex-shrink-0">
       <HugeiconsIcon
         icon={icon}
-        size={20}
+        size={16}
         className={`text-muted-foreground ${className}`}
       />
     </div>

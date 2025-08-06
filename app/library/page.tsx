@@ -1,6 +1,5 @@
 'use client';
 
-import { Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import React from 'react';
 
@@ -9,6 +8,7 @@ import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { PageHeader } from '@/components/page-header';
 import { useUserData } from '@/hooks/use-user-data';
 import { LibraryContent } from './library-content';
+import { LoadingSkeleton } from './loading-skeleton';
 
 export default function LibraryPage() {
   const { user, subscriptionData, isProUser, isLoading } = useUserData();
@@ -25,8 +25,17 @@ export default function LibraryPage() {
       <SidebarProvider>
         <AppSidebar />
         <SidebarInset className="flex flex-col h-full">
-          <div className="flex-1 flex items-center justify-center">
-            <div>Loading...</div>
+          <PageHeader
+            title="Library"
+            user={null}
+            subscriptionData={null}
+            isProUser={false}
+            isProStatusLoading={true}
+          />
+          <div className="flex-1 overflow-y-auto">
+            <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
+              <LoadingSkeleton />
+            </div>
           </div>
         </SidebarInset>
       </SidebarProvider>

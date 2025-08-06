@@ -4,18 +4,13 @@ import { ColumnDef } from '@tanstack/react-table';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
-  MoreVerticalIcon,
-  Download01Icon,
-  Delete02Icon,
-  Edit02Icon,
   ArrowUpDownIcon,
   ArrowUp01Icon,
   ArrowDown01Icon,
@@ -71,42 +66,60 @@ export const createColumns = (context: ColumnContext): ColumnDef<FileData>[] => 
     accessorKey: 'filename',
     header: ({ column }) => {
       const sorted = column.getIsSorted();
-      const handleClick = () => {
-        if (sorted === false) {
-          column.toggleSorting(false);
-        } else if (sorted === 'asc') {
-          column.toggleSorting(true);
-        } else {
-          column.clearSorting();
-        }
+      const sortIndex = column.getSortIndex();
+      const handleClick = (e: React.MouseEvent) => {
+        column.toggleSorting(
+          column.getIsSorted() === 'asc',
+          e.shiftKey
+        );
       };
       
       const getSortIcon = () => {
         if (sorted === 'asc') {
-          return <HugeiconsIcon icon={ArrowUp01Icon} size={16} className="ml-2" />;
+          return (
+            <span className="ml-2 flex items-center">
+              <HugeiconsIcon icon={ArrowUp01Icon} size={14} />
+              {sortIndex > -1 && <span className="ml-0.5 text-xs">{sortIndex + 1}</span>}
+            </span>
+          );
         } else if (sorted === 'desc') {
-          return <HugeiconsIcon icon={ArrowDown01Icon} size={16} className="ml-2" />;
+          return (
+            <span className="ml-2 flex items-center">
+              <HugeiconsIcon icon={ArrowDown01Icon} size={14} />
+              {sortIndex > -1 && <span className="ml-0.5 text-xs">{sortIndex + 1}</span>}
+            </span>
+          );
         }
-        return <HugeiconsIcon icon={ArrowUpDownIcon} size={16} className="ml-2" />;
+        return <HugeiconsIcon icon={ArrowUpDownIcon} size={14} className="ml-2" />;
       };
       
       return (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleClick}
-          className="h-8 px-2 lg:px-3"
-        >
-          Name
-          {getSortIcon()}
-        </Button>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleClick}
+                className="h-8 px-1 lg:px-2 text-xs"
+              >
+                Name
+                {getSortIcon()}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Click to sort by name</p>
+              <p className="text-xs text-muted-foreground">Hold Shift + Click to add to multi-sort</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       );
     },
     cell: ({ row }) => {
       const file = row.original;
       const isEditing = context.editingFileId === file.id;
       return (
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-2">
           <FileIcon contentType={file.contentType || 'application/octet-stream'} />
           <div className="min-w-0 flex-1">
             <EditableFilename
@@ -135,9 +148,9 @@ export const createColumns = (context: ColumnContext): ColumnDef<FileData>[] => 
         row.original.filename?.split('.').pop()?.toUpperCase();
 
       return (
-        <div className="text-sm">
+        <div className="text-xs">
           <div className="font-medium capitalize">{type}</div>
-          {extension && <div className="text-xs text-muted-foreground">{extension}</div>}
+          {extension && <div className="text-[10px] text-muted-foreground">{extension}</div>}
         </div>
       );
     },
@@ -148,40 +161,58 @@ export const createColumns = (context: ColumnContext): ColumnDef<FileData>[] => 
     accessorKey: 'size',
     header: ({ column }) => {
       const sorted = column.getIsSorted();
-      const handleClick = () => {
-        if (sorted === false) {
-          column.toggleSorting(false);
-        } else if (sorted === 'asc') {
-          column.toggleSorting(true);
-        } else {
-          column.clearSorting();
-        }
+      const sortIndex = column.getSortIndex();
+      const handleClick = (e: React.MouseEvent) => {
+        column.toggleSorting(
+          column.getIsSorted() === 'asc',
+          e.shiftKey
+        );
       };
       
       const getSortIcon = () => {
         if (sorted === 'asc') {
-          return <HugeiconsIcon icon={ArrowUp01Icon} size={16} className="ml-2" />;
+          return (
+            <span className="ml-2 flex items-center">
+              <HugeiconsIcon icon={ArrowUp01Icon} size={14} />
+              {sortIndex > -1 && <span className="ml-0.5 text-xs">{sortIndex + 1}</span>}
+            </span>
+          );
         } else if (sorted === 'desc') {
-          return <HugeiconsIcon icon={ArrowDown01Icon} size={16} className="ml-2" />;
+          return (
+            <span className="ml-2 flex items-center">
+              <HugeiconsIcon icon={ArrowDown01Icon} size={14} />
+              {sortIndex > -1 && <span className="ml-0.5 text-xs">{sortIndex + 1}</span>}
+            </span>
+          );
         }
-        return <HugeiconsIcon icon={ArrowUpDownIcon} size={16} className="ml-2" />;
+        return <HugeiconsIcon icon={ArrowUpDownIcon} size={14} className="ml-2" />;
       };
       
       return (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleClick}
-          className="h-8 px-2 lg:px-3"
-        >
-          Size
-          {getSortIcon()}
-        </Button>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleClick}
+                className="h-8 px-1 lg:px-2 text-xs"
+              >
+                Size
+                {getSortIcon()}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Click to sort by size</p>
+              <p className="text-xs text-muted-foreground">Hold Shift + Click to add to multi-sort</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       );
     },
     cell: ({ row }) => {
       const size = row.getValue('size') as number;
-      return <div className="text-sm">{formatBytes(size)}</div>;
+      return <div className="text-xs">{formatBytes(size)}</div>;
     },
     size: 100,
   },
@@ -190,35 +221,53 @@ export const createColumns = (context: ColumnContext): ColumnDef<FileData>[] => 
     accessorKey: 'createdAt',
     header: ({ column }) => {
       const sorted = column.getIsSorted();
-      const handleClick = () => {
-        if (sorted === false) {
-          column.toggleSorting(false);
-        } else if (sorted === 'asc') {
-          column.toggleSorting(true);
-        } else {
-          column.clearSorting();
-        }
+      const sortIndex = column.getSortIndex();
+      const handleClick = (e: React.MouseEvent) => {
+        column.toggleSorting(
+          column.getIsSorted() === 'asc',
+          e.shiftKey
+        );
       };
       
       const getSortIcon = () => {
         if (sorted === 'asc') {
-          return <HugeiconsIcon icon={ArrowUp01Icon} size={16} className="ml-2" />;
+          return (
+            <span className="ml-2 flex items-center">
+              <HugeiconsIcon icon={ArrowUp01Icon} size={14} />
+              {sortIndex > -1 && <span className="ml-0.5 text-xs">{sortIndex + 1}</span>}
+            </span>
+          );
         } else if (sorted === 'desc') {
-          return <HugeiconsIcon icon={ArrowDown01Icon} size={16} className="ml-2" />;
+          return (
+            <span className="ml-2 flex items-center">
+              <HugeiconsIcon icon={ArrowDown01Icon} size={14} />
+              {sortIndex > -1 && <span className="ml-0.5 text-xs">{sortIndex + 1}</span>}
+            </span>
+          );
         }
-        return <HugeiconsIcon icon={ArrowUpDownIcon} size={16} className="ml-2" />;
+        return <HugeiconsIcon icon={ArrowUpDownIcon} size={14} className="ml-2" />;
       };
       
       return (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleClick}
-          className="h-8 px-2 lg:px-3"
-        >
-          Uploaded
-          {getSortIcon()}
-        </Button>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleClick}
+                className="h-8 px-1 lg:px-2 text-xs"
+              >
+                Uploaded
+                {getSortIcon()}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Click to sort by upload date</p>
+              <p className="text-xs text-muted-foreground">Hold Shift + Click to add to multi-sort</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       );
     },
     cell: ({ row }) => {
@@ -233,7 +282,7 @@ export const createColumns = (context: ColumnContext): ColumnDef<FileData>[] => 
       }
 
       return (
-        <div className="text-sm">
+        <div className="text-xs">
           {date.toLocaleDateString('en-US', {
             month: 'short',
             day: 'numeric',
@@ -249,35 +298,53 @@ export const createColumns = (context: ColumnContext): ColumnDef<FileData>[] => 
     accessorKey: 'updatedAt',
     header: ({ column }) => {
       const sorted = column.getIsSorted();
-      const handleClick = () => {
-        if (sorted === false) {
-          column.toggleSorting(false);
-        } else if (sorted === 'asc') {
-          column.toggleSorting(true);
-        } else {
-          column.clearSorting();
-        }
+      const sortIndex = column.getSortIndex();
+      const handleClick = (e: React.MouseEvent) => {
+        column.toggleSorting(
+          column.getIsSorted() === 'asc',
+          e.shiftKey
+        );
       };
       
       const getSortIcon = () => {
         if (sorted === 'asc') {
-          return <HugeiconsIcon icon={ArrowUp01Icon} size={16} className="ml-2" />;
+          return (
+            <span className="ml-2 flex items-center">
+              <HugeiconsIcon icon={ArrowUp01Icon} size={14} />
+              {sortIndex > -1 && <span className="ml-0.5 text-xs">{sortIndex + 1}</span>}
+            </span>
+          );
         } else if (sorted === 'desc') {
-          return <HugeiconsIcon icon={ArrowDown01Icon} size={16} className="ml-2" />;
+          return (
+            <span className="ml-2 flex items-center">
+              <HugeiconsIcon icon={ArrowDown01Icon} size={14} />
+              {sortIndex > -1 && <span className="ml-0.5 text-xs">{sortIndex + 1}</span>}
+            </span>
+          );
         }
-        return <HugeiconsIcon icon={ArrowUpDownIcon} size={16} className="ml-2" />;
+        return <HugeiconsIcon icon={ArrowUpDownIcon} size={14} className="ml-2" />;
       };
       
       return (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleClick}
-          className="h-8 px-2 lg:px-3"
-        >
-          Modified
-          {getSortIcon()}
-        </Button>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleClick}
+                className="h-8 px-1 lg:px-2 text-xs"
+              >
+                Modified
+                {getSortIcon()}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Click to sort by modification date</p>
+              <p className="text-xs text-muted-foreground">Hold Shift + Click to add to multi-sort</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       );
     },
     cell: ({ row }) => {
@@ -297,13 +364,13 @@ export const createColumns = (context: ColumnContext): ColumnDef<FileData>[] => 
       if (diffInHours < 24) {
         const diffInMinutes = Math.floor(diffInHours * 60);
         if (diffInMinutes < 60) {
-          return <div className="text-sm">{diffInMinutes}m ago</div>;
+          return <div className="text-xs">{diffInMinutes}m ago</div>;
         }
-        return <div className="text-sm">{Math.floor(diffInHours)}h ago</div>;
+        return <div className="text-xs">{Math.floor(diffInHours)}h ago</div>;
       }
 
       return (
-        <div className="text-sm">
+        <div className="text-xs">
           {date.toLocaleDateString('en-US', {
             month: 'short',
             day: 'numeric',

@@ -13,6 +13,7 @@ import {
   ColumnFiltersState,
   VisibilityState,
   OnChangeFn,
+  PaginationState,
 } from '@tanstack/react-table';
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -28,13 +29,9 @@ import {
   ArrowLeft02Icon,
   ArrowRight02Icon,
   Settings02Icon,
-  Delete02Icon,
-  Download01Icon,
 } from '@hugeicons/core-free-icons';
 
 import { FileData } from './columns';
-import { downloadMultipleFiles } from '@/lib/utils/download';
-import { toast } from 'sonner';
 
 interface DataTableProps {
   columns: ColumnDef<FileData>[];
@@ -58,6 +55,21 @@ export function DataTable({
     return saved ? JSON.parse(saved) : {};
   });
   const [rowSelection, setRowSelection] = React.useState({});
+  const [pagination, setPagination] = React.useState<PaginationState>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('library-pagination');
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch {
+        }
+      }
+    }
+    return {
+      pageIndex: 0,
+      pageSize: 20,
+    };
+  });
 
   const columnVisibility = externalColumnVisibility ?? internalColumnVisibility;
   const setColumnVisibility = onColumnVisibilityChange ?? setInternalColumnVisibility;
@@ -73,17 +85,20 @@ export function DataTable({
     onColumnFiltersChange: setColumnFilters,
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
+    onPaginationChange: setPagination,
     state: {
       sorting,
       columnFilters,
       columnVisibility,
       rowSelection,
+      pagination,
     },
-    initialState: {
-      pagination: {
-        pageSize: 20,
-      },
-    },
+    getRowId: (row) => String(row.id),
+    manualPagination: false,
+    autoResetPageIndex: false,
+    autoResetExpanded: false,
+    enableMultiSort: true,
+    maxMultiSortColCount: 5,
   });
 
   React.useEffect(() => {
@@ -92,29 +107,20 @@ export function DataTable({
     }
   }, [columnVisibility, externalColumnVisibility]);
 
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('library-pagination', JSON.stringify(pagination));
+    }
+  }, [pagination]);
+
+  React.useEffect(() => {
+    const maxPageIndex = Math.max(0, Math.ceil(data.length / pagination.pageSize) - 1);
+    if (pagination.pageIndex > maxPageIndex) {
+      setPagination(prev => ({ ...prev, pageIndex: maxPageIndex }));
+    }
+  }, [data.length, pagination.pageSize, pagination.pageIndex]);
+
   const selectedRowCount = table.getFilteredSelectedRowModel().rows.length;
-  const selectedFiles = table.getFilteredSelectedRowModel().rows.map((row) => row.original);
-
-  const handleBulkDownload = async () => {
-    try {
-      toast.info(`Downloading ${selectedFiles.length} files...`);
-      await downloadMultipleFiles(selectedFiles);
-      toast.success('All downloads started');
-    } catch (error) {
-      toast.error('Some downloads failed');
-    }
-  };
-
-  const handleBulkDelete = async () => {
-    if (confirm(`Are you sure you want to delete ${selectedRowCount} files?`)) {
-      try {
-        await Promise.all(selectedFiles.map((file) => fetch(`/api/files/${file.id}`, { method: 'DELETE' })));
-        window.location.reload();
-      } catch (error) {
-        console.error('Failed to delete files:', error);
-      }
-    }
-  };
 
   return (
     <div className="space-y-4">
@@ -148,39 +154,47 @@ export function DataTable({
         )}
       </div>
 
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => {
-                  return (
-                    <TableHead key={header.id} style={{ width: header.getSize() }}>
-                      {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
-                    </TableHead>
-                  );
-                })}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
-                  ))}
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center">
-                  No files found.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+      <div>
+        <div className="relative h-[485px] rounded-md border overflow-auto">
+          <table className="w-full caption-bottom text-sm">
+            <thead className="[&_tr]:border-b sticky top-0 z-10 bg-background">
+              {table.getHeaderGroups().map((headerGroup) => (
+                <tr key={headerGroup.id} className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
+                  {headerGroup.headers.map((header) => {
+                    return (
+                      <th 
+                        key={header.id} 
+                        style={{ width: header.getSize() }} 
+                        className="h-9 px-3 text-left align-middle font-medium text-muted-foreground text-xs [&:has([role=checkbox])]:pr-0 bg-background"
+                      >
+                        {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                      </th>
+                    );
+                  })}
+                </tr>
+              ))}
+            </thead>
+            <tbody className="[&_tr:last-child]:border-0">
+              {table.getRowModel().rows?.length ? (
+                table.getRowModel().rows.map((row) => (
+                  <tr key={row.id} data-state={row.getIsSelected() && 'selected'} className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
+                    {row.getVisibleCells().map((cell) => (
+                      <td key={cell.id} className="py-1.5 px-3 align-middle text-xs [&:has([role=checkbox])]:pr-0">
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </td>
+                    ))}
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={columns.length} className="h-24 text-center text-xs">
+                    No files found.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <div className="flex items-center justify-between space-x-2 py-4">
@@ -196,9 +210,10 @@ export function DataTable({
             <p className="text-sm font-medium">Rows per page</p>
             <select
               className="h-8 w-[70px] rounded border border-input bg-background px-3 py-1 text-sm"
-              value={table.getState().pagination.pageSize}
+              value={pagination.pageSize}
               onChange={(e) => {
-                table.setPageSize(Number(e.target.value));
+                const newSize = Number(e.target.value);
+                setPagination(prev => ({ ...prev, pageSize: newSize, pageIndex: 0 }));
               }}
             >
               {[10, 20, 30, 40, 50].map((pageSize) => (
@@ -209,7 +224,7 @@ export function DataTable({
             </select>
           </div>
           <div className="flex w-[100px] items-center justify-center text-sm font-medium">
-            Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
+            Page {pagination.pageIndex + 1} of {table.getPageCount()}
           </div>
           <div className="flex items-center space-x-2">
             <Button

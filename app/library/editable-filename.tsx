@@ -90,7 +90,7 @@ export function EditableFilename({ file, isEditing, onEditingChange }: EditableF
         onKeyDown={handleKeyDown}
         onBlur={handleBlur}
         disabled={updateMutation.isPending}
-        className="h-6 text-sm font-medium px-1 py-0 border-none shadow-none bg-transparent focus-visible:ring-1 focus-visible:ring-ring"
+        className="h-5 text-xs font-medium px-1 py-0 border-none shadow-none bg-transparent focus-visible:ring-1 focus-visible:ring-ring"
         autoComplete="off"
       />
     );
@@ -100,7 +100,7 @@ export function EditableFilename({ file, isEditing, onEditingChange }: EditableF
     <button
       onClick={handleClick}
       disabled={updateMutation.isPending}
-      className="text-left w-full text-sm font-medium truncate hover:bg-muted/50 px-1 py-0.5 rounded transition-colors disabled:opacity-50"
+      className="text-left w-full text-xs font-medium truncate hover:bg-muted/50 px-1 py-0 rounded transition-colors disabled:opacity-50"
       title="Click to rename"
     >
       {updateMutation.isPending ? (

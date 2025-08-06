@@ -193,15 +193,16 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const fileExtension = file.name.split('.').pop();
-    const blob = await put(`files/${session.user.id}/${generateId()}.${fileExtension}`, file, {
+    const fileId = generateId();
+    
+    const blob = await put(`files/${session.user.id}/${file.name}`, file, {
       access: 'public',
     });
 
     const fileRecord = {
-      id: generateId(),
+      id: fileId,
       userId: session.user.id,
-      filename: blob.url.split('/').pop() || file.name,
+      filename: file.name,
       originalName: file.name,
       contentType: file.type,
       size: file.size,

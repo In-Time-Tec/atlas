@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -37,6 +37,14 @@ export function FileActionsCell({ file, onRename }: FileActionsCellProps) {
 
   const deleteMutation = useDeleteFile();
   const updateMutation = useUpdateFile();
+  
+  const isDeleting = deleteMutation.isPending;
+
+  useEffect(() => {
+    if (deleteMutation.isSuccess) {
+      setIsDeleteDialogOpen(false);
+    }
+  }, [deleteMutation.isSuccess]);
 
   const handleDownload = async () => {
     try {
@@ -51,13 +59,8 @@ export function FileActionsCell({ file, onRename }: FileActionsCellProps) {
     setIsDeleteDialogOpen(true);
   };
 
-  const handleDeleteConfirm = async () => {
-    try {
-      await deleteMutation.mutateAsync(file.id);
-      setIsDeleteDialogOpen(false);
-    } catch (error) {
-      console.error('Failed to delete file:', error);
-    }
+  const handleDeleteConfirm = () => {
+    deleteMutation.mutate(file.id);
   };
 
   const handleRename = () => {
@@ -105,10 +108,11 @@ export function FileActionsCell({ file, onRename }: FileActionsCellProps) {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-white hover:bg-destructive/90"
               onClick={handleDeleteConfirm}
+              disabled={isDeleting}
             >
               Delete
             </AlertDialogAction>

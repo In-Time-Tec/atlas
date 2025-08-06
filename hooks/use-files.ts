@@ -169,12 +169,22 @@ export function useUploadFile() {
 
   return useMutation({
     mutationFn: uploadFile,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [FILES_QUERY_KEY] });
-      toast.success('File uploaded successfully');
-    },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to upload file');
+    },
+    onSuccess: (data, variables) => {
+      queryClient.setQueriesData({ queryKey: [FILES_QUERY_KEY] }, (old: FilesResponse | undefined) => {
+        if (!old) return old;
+        return {
+          ...old,
+          files: [data, ...old.files],
+          pagination: {
+            ...old.pagination,
+            total: old.pagination.total + 1,
+          },
+        };
+      });
+      toast.success(`${variables.file.name} uploaded successfully`);
     },
   });
 }
@@ -218,11 +228,17 @@ export function useUpdateFile() {
       }
       toast.error(error.message || 'Failed to update file');
     },
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
+      queryClient.setQueriesData({ queryKey: [FILES_QUERY_KEY] }, (old: FilesResponse | undefined) => {
+        if (!old) return old;
+        return {
+          ...old,
+          files: old.files.map((file) => 
+            file.id === variables.id ? { ...file, ...data } : file
+          ),
+        };
+      });
       toast.success('File updated successfully');
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: [FILES_QUERY_KEY] });
     },
   });
 }
@@ -262,9 +278,6 @@ export function useDeleteFile() {
     onSuccess: () => {
       toast.success('File deleted successfully');
     },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: [FILES_QUERY_KEY] });
-    },
   });
 }
 
@@ -275,12 +288,35 @@ export function useDeleteFiles() {
     mutationFn: async (ids: string[]) => {
       await Promise.all(ids.map((id) => deleteFile(id)));
     },
-    onSuccess: (_, ids) => {
-      queryClient.invalidateQueries({ queryKey: [FILES_QUERY_KEY] });
-      toast.success(`${ids.length} files deleted successfully`);
+    onMutate: async (fileIds: string[]) => {
+      await queryClient.cancelQueries({ queryKey: [FILES_QUERY_KEY] });
+
+      const previousData = queryClient.getQueriesData({ queryKey: [FILES_QUERY_KEY] });
+
+      queryClient.setQueriesData({ queryKey: [FILES_QUERY_KEY] }, (old: FilesResponse | undefined) => {
+        if (!old) return old;
+        return {
+          ...old,
+          files: old.files.filter((file) => !fileIds.includes(file.id)),
+          pagination: {
+            ...old.pagination,
+            total: old.pagination.total - fileIds.length,
+          },
+        };
+      });
+
+      return { previousData };
     },
-    onError: (error: Error) => {
+    onError: (error: Error, _, context) => {
+      if (context?.previousData) {
+        context.previousData.forEach(([queryKey, data]) => {
+          queryClient.setQueryData(queryKey, data);
+        });
+      }
       toast.error(error.message || 'Failed to delete files');
+    },
+    onSuccess: (_, ids) => {
+      toast.success(`${ids.length} files deleted successfully`);
     },
   });
 }
