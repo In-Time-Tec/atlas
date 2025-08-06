@@ -17,6 +17,8 @@ import {
   Delete02Icon,
   Edit02Icon,
   ArrowUpDownIcon,
+  ArrowUp01Icon,
+  ArrowDown01Icon,
 } from '@hugeicons/core-free-icons';
 import { formatBytes } from '@/lib/utils';
 import { FileIcon } from './file-icon';
@@ -68,15 +70,35 @@ export const createColumns = (context: ColumnContext): ColumnDef<FileData>[] => 
     id: 'filename',
     accessorKey: 'filename',
     header: ({ column }) => {
+      const sorted = column.getIsSorted();
+      const handleClick = () => {
+        if (sorted === false) {
+          column.toggleSorting(false);
+        } else if (sorted === 'asc') {
+          column.toggleSorting(true);
+        } else {
+          column.clearSorting();
+        }
+      };
+      
+      const getSortIcon = () => {
+        if (sorted === 'asc') {
+          return <HugeiconsIcon icon={ArrowUp01Icon} size={16} className="ml-2" />;
+        } else if (sorted === 'desc') {
+          return <HugeiconsIcon icon={ArrowDown01Icon} size={16} className="ml-2" />;
+        }
+        return <HugeiconsIcon icon={ArrowUpDownIcon} size={16} className="ml-2" />;
+      };
+      
       return (
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          onClick={handleClick}
           className="h-8 px-2 lg:px-3"
         >
           Name
-          <HugeiconsIcon icon={ArrowUpDownIcon} size={16} className="ml-2" />
+          {getSortIcon()}
         </Button>
       );
     },
@@ -125,15 +147,35 @@ export const createColumns = (context: ColumnContext): ColumnDef<FileData>[] => 
     id: 'size',
     accessorKey: 'size',
     header: ({ column }) => {
+      const sorted = column.getIsSorted();
+      const handleClick = () => {
+        if (sorted === false) {
+          column.toggleSorting(false);
+        } else if (sorted === 'asc') {
+          column.toggleSorting(true);
+        } else {
+          column.clearSorting();
+        }
+      };
+      
+      const getSortIcon = () => {
+        if (sorted === 'asc') {
+          return <HugeiconsIcon icon={ArrowUp01Icon} size={16} className="ml-2" />;
+        } else if (sorted === 'desc') {
+          return <HugeiconsIcon icon={ArrowDown01Icon} size={16} className="ml-2" />;
+        }
+        return <HugeiconsIcon icon={ArrowUpDownIcon} size={16} className="ml-2" />;
+      };
+      
       return (
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          onClick={handleClick}
           className="h-8 px-2 lg:px-3"
         >
           Size
-          <HugeiconsIcon icon={ArrowUpDownIcon} size={16} className="ml-2" />
+          {getSortIcon()}
         </Button>
       );
     },
@@ -147,15 +189,35 @@ export const createColumns = (context: ColumnContext): ColumnDef<FileData>[] => 
     id: 'uploaded',
     accessorKey: 'createdAt',
     header: ({ column }) => {
+      const sorted = column.getIsSorted();
+      const handleClick = () => {
+        if (sorted === false) {
+          column.toggleSorting(false);
+        } else if (sorted === 'asc') {
+          column.toggleSorting(true);
+        } else {
+          column.clearSorting();
+        }
+      };
+      
+      const getSortIcon = () => {
+        if (sorted === 'asc') {
+          return <HugeiconsIcon icon={ArrowUp01Icon} size={16} className="ml-2" />;
+        } else if (sorted === 'desc') {
+          return <HugeiconsIcon icon={ArrowDown01Icon} size={16} className="ml-2" />;
+        }
+        return <HugeiconsIcon icon={ArrowUpDownIcon} size={16} className="ml-2" />;
+      };
+      
       return (
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          onClick={handleClick}
           className="h-8 px-2 lg:px-3"
         >
           Uploaded
-          <HugeiconsIcon icon={ArrowUpDownIcon} size={16} className="ml-2" />
+          {getSortIcon()}
         </Button>
       );
     },
@@ -185,7 +247,39 @@ export const createColumns = (context: ColumnContext): ColumnDef<FileData>[] => 
   {
     id: 'modified',
     accessorKey: 'updatedAt',
-    header: 'Modified',
+    header: ({ column }) => {
+      const sorted = column.getIsSorted();
+      const handleClick = () => {
+        if (sorted === false) {
+          column.toggleSorting(false);
+        } else if (sorted === 'asc') {
+          column.toggleSorting(true);
+        } else {
+          column.clearSorting();
+        }
+      };
+      
+      const getSortIcon = () => {
+        if (sorted === 'asc') {
+          return <HugeiconsIcon icon={ArrowUp01Icon} size={16} className="ml-2" />;
+        } else if (sorted === 'desc') {
+          return <HugeiconsIcon icon={ArrowDown01Icon} size={16} className="ml-2" />;
+        }
+        return <HugeiconsIcon icon={ArrowUpDownIcon} size={16} className="ml-2" />;
+      };
+      
+      return (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleClick}
+          className="h-8 px-2 lg:px-3"
+        >
+          Modified
+          {getSortIcon()}
+        </Button>
+      );
+    },
     cell: ({ row }) => {
       const dateValue = row.getValue('modified') as string;
       if (!dateValue) {
