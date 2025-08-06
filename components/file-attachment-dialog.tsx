@@ -313,7 +313,6 @@ export function FileAttachmentDialog({
     },
     getRowId: (row) => String(row.id),
     autoResetPageIndex: false,
-    autoResetSelectedRows: false,
     enableMultiSort: true,
     maxMultiSortColCount: 5,
   });
@@ -345,7 +344,7 @@ export function FileAttachmentDialog({
               placeholder="Search files..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
+              className="pl-10 focus-visible:ring-0"
             />
           </div>
 
