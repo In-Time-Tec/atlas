@@ -16,7 +16,6 @@ import {
   PaginationState,
 } from '@tanstack/react-table';
 
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -55,6 +54,7 @@ export function DataTable({
     return saved ? JSON.parse(saved) : {};
   });
   const [rowSelection, setRowSelection] = React.useState({});
+  
   const [pagination, setPagination] = React.useState<PaginationState>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('library-pagination');

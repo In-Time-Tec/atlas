@@ -197,6 +197,7 @@ export async function POST(request: NextRequest) {
     
     const blob = await put(`files/${session.user.id}/${file.name}`, file, {
       access: 'public',
+      addRandomSuffix: true,
     });
 
     const fileRecord = {

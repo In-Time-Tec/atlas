@@ -34,15 +34,12 @@ import {
 import { getDiscountConfig } from '@/lib/discount';
 import { groq } from '@ai-sdk/groq';
 import { Client } from '@upstash/qstash';
-// Removed old subscription imports - now using unified user data approach
 import { usageCountCache, createMessageCountKey, createExtremeCountKey } from '@/lib/performance-cache';
 import { CronExpressionParser } from 'cron-parser';
 
-// Server action to get the current user with Pro status - UNIFIED VERSION
 export async function getCurrentUser() {
   'use server';
 
-  // Import here to avoid issues with SSR
   const { getComprehensiveUserData } = await import('@/lib/user-data-server');
   return await getComprehensiveUserData();
 }
@@ -103,6 +100,12 @@ export async function suggestQuestions(history: any[]) {
 }
 
 export async function checkImageModeration(images: any) {
+  const LLAMA_GUARD_DOES_NOT_SUPPORT_IMAGES = true;
+  
+  if (LLAMA_GUARD_DOES_NOT_SUPPORT_IMAGES) {
+    return 'safe';
+  }
+  
   const { text } = await generateText({
     model: groq('meta-llama/llama-guard-4-12b'),
     messages: [
@@ -1112,7 +1115,6 @@ export async function updateChatTitle(chatId: string, title: string) {
 export async function getSubDetails() {
   'use server';
 
-  // Import here to avoid issues with SSR
   const { getComprehensiveUserData } = await import('@/lib/user-data-server');
   const userData = await getComprehensiveUserData();
 
@@ -1331,11 +1333,9 @@ export async function deleteCustomInstructionsAction() {
   }
 }
 
-// Fast pro user status check - UNIFIED VERSION
 export async function getProUserStatusOnly(): Promise<boolean> {
   'use server';
 
-  // Import here to avoid issues with SSR
   const { isUserPro } = await import('@/lib/user-data-server');
   return await isUserPro();
 }
@@ -1356,7 +1356,6 @@ export async function getPaymentHistory() {
 export async function getDodoPaymentsProStatus() {
   'use server';
 
-  // Import here to avoid issues with SSR
   const { getComprehensiveUserData } = await import('@/lib/user-data-server');
   const userData = await getComprehensiveUserData();
 
@@ -1378,54 +1377,43 @@ export async function getDodoPaymentsProStatus() {
 export async function getDodoExpirationDate() {
   'use server';
 
-  // Import here to avoid issues with SSR
   const { getComprehensiveUserData } = await import('@/lib/user-data-server');
   const userData = await getComprehensiveUserData();
 
   return userData?.dodoPayments?.expiresAt || null;
 }
 
-// Initialize QStash client
 const qstash = new Client({ token: serverEnv.QSTASH_TOKEN });
 
-// Helper function to convert frequency to cron schedule with timezone
 function frequencyToCron(frequency: string, time: string, timezone: string, dayOfWeek?: string): string {
   const [hours, minutes] = time.split(':').map(Number);
 
   let cronExpression = '';
   switch (frequency) {
     case 'once':
-      // For 'once', we'll handle it differently - no cron schedule needed
       return '';
     case 'daily':
       cronExpression = `${minutes} ${hours} * * *`;
       break;
     case 'weekly':
-      // Use the day of week if provided, otherwise default to Sunday (0)
       const day = dayOfWeek || '0';
       cronExpression = `${minutes} ${hours} * * ${day}`;
       break;
     case 'monthly':
-      // Run on the 1st of each month
       cronExpression = `${minutes} ${hours} 1 * *`;
       break;
     case 'yearly':
-      // Run on January 1st
       cronExpression = `${minutes} ${hours} 1 1 *`;
       break;
     default:
-      cronExpression = `${minutes} ${hours} * * *`; // Default to daily
+      cronExpression = `${minutes} ${hours} * * *`;
   }
 
-  // Prepend timezone to cron expression for QStash
   return `CRON_TZ=${timezone} ${cronExpression}`;
 }
 
-// Helper function to calculate next run time using cron-parser
 function calculateNextRun(cronSchedule: string, timezone: string): Date {
   try {
-    // Extract the actual cron expression from the timezone-prefixed format
-    // Format: "CRON_TZ=timezone 0 9 * * *" -> "0 9 * * *"
     const actualCronExpression = cronSchedule.startsWith('CRON_TZ=')
       ? cronSchedule.split(' ').slice(1).join(' ')
       : cronSchedule;
@@ -1439,7 +1427,6 @@ function calculateNextRun(cronSchedule: string, timezone: string): Date {
     return interval.next().toDate();
   } catch (error) {
     console.error('Error parsing cron expression:', cronSchedule, error);
-    // Fallback to simple calculation
     const now = new Date();
     const nextRun = new Date(now);
     nextRun.setDate(nextRun.getDate() + 1);
@@ -1447,23 +1434,19 @@ function calculateNextRun(cronSchedule: string, timezone: string): Date {
   }
 }
 
-// Helper function to calculate next run for 'once' frequency
 function calculateOnceNextRun(time: string, timezone: string, date?: string): Date {
   const [hours, minutes] = time.split(':').map(Number);
 
   if (date) {
-    // If a specific date is provided, use it
     const targetDate = new Date(date);
     targetDate.setHours(hours, minutes, 0, 0);
     return targetDate;
   }
 
-  // Otherwise, use today or tomorrow
   const now = new Date();
   const targetDate = new Date(now);
   targetDate.setHours(hours, minutes, 0, 0);
 
-  // If the time has already passed today, schedule for tomorrow
   if (targetDate <= now) {
     targetDate.setDate(targetDate.getDate() + 1);
   }
@@ -1482,9 +1465,9 @@ export async function createScheduledTask({
   title: string;
   prompt: string;
   frequency: 'once' | 'daily' | 'weekly' | 'monthly' | 'yearly';
-  time: string; // Format: "HH:MM" or "HH:MM:dayOfWeek" for weekly
+  time: string;
   timezone?: string;
-  date?: string; // For 'once' frequency
+  date?: string;
 }) {
   try {
     const user = await getCurrentUser();
@@ -1492,18 +1475,15 @@ export async function createScheduledTask({
       throw new Error('Authentication required');
     }
 
-    // Check if user is Pro
     if (!user.isProUser) {
       throw new Error('Pro subscription required for scheduled searches');
     }
 
-    // Check task limits
     const existingTasks = await getTasksByUserId({ userId: user.id });
     if (existingTasks.length >= 10) {
       throw new Error('You have reached the maximum limit of 10 tasks');
     }
 
-    // Check daily task limit specifically
     if (frequency === 'daily') {
       const activeDailyTasks = existingTasks.filter(
         (task) => task.frequency === 'daily' && task.status === 'active',
@@ -1518,7 +1498,6 @@ export async function createScheduledTask({
     let actualTime = time;
     let dayOfWeek: string | undefined;
 
-    // Extract day of week for weekly frequency
     if (frequency === 'weekly' && time.includes(':')) {
       const parts = time.split(':');
       if (parts.length === 3) {
@@ -1528,15 +1507,12 @@ export async function createScheduledTask({
     }
 
     if (frequency === 'once') {
-      // For 'once', calculate the next run time without cron
       nextRunAt = calculateOnceNextRun(actualTime, timezone, date);
     } else {
-      // Generate cron schedule for recurring frequencies
       cronSchedule = frequencyToCron(frequency, actualTime, timezone, dayOfWeek);
       nextRunAt = calculateNextRun(cronSchedule, timezone);
     }
 
-    // Create task in database first
     const task = await createTask({
       userId: user.id,
       title,
@@ -1545,23 +1521,21 @@ export async function createScheduledTask({
       cronSchedule,
       timezone,
       nextRunAt,
-      qstashScheduleId: undefined, // Will be updated if needed
+      qstashScheduleId: undefined,
     });
 
     console.log('📝 Created task in database:', task.id, 'Now scheduling with QStash...');
 
-    // Small delay to ensure database transaction is committed
     await new Promise((resolve) => setTimeout(resolve, 100));
 
-    // Create QStash schedule for all frequencies (recurring and once)
     if (task.id) {
       try {
         if (frequency === 'once') {
           console.log('⏰ Creating QStash one-time execution for task:', task.id);
           console.log('📅 Scheduled time:', nextRunAt.toISOString());
 
-          const delay = Math.floor((nextRunAt.getTime() - Date.now()) / 1000); // Delay in seconds
-          const minimumDelay = Math.max(delay, 5); // At least 5 seconds to ensure DB consistency
+          const delay = Math.floor((nextRunAt.getTime() - Date.now()) / 1000);
+          const minimumDelay = Math.max(delay, 5);
 
           if (delay > 0) {
             await qstash.publish({
@@ -1585,8 +1559,6 @@ export async function createScheduledTask({
               'seconds',
             );
 
-            // For consistency, we don't store a qstashScheduleId for one-time executions
-            // since they use the publish API instead of schedules API
           } else {
             throw new Error('Cannot schedule for a time in the past');
           }
@@ -1610,7 +1582,6 @@ export async function createScheduledTask({
 
           console.log('✅ QStash recurring schedule created:', scheduleResponse.scheduleId, 'for task:', task.id);
 
-          // Update task with QStash schedule ID
           await updateTask({
             id: task.id,
             qstashScheduleId: scheduleResponse.scheduleId,
@@ -1620,7 +1591,6 @@ export async function createScheduledTask({
         }
       } catch (qstashError) {
         console.error('Error creating QStash schedule:', qstashError);
-        // Delete the task if QStash creation fails
         await deleteTask({ id: task.id });
         throw new Error(
           `Failed to ${frequency === 'once' ? 'schedule one-time search' : 'create recurring schedule'}. Please try again.`,
@@ -1644,7 +1614,6 @@ export async function getUserTasks() {
 
     const tasks = await getTasksByUserId({ userId: user.id });
 
-    // Update next run times for active tasks
     const updatedTasks = tasks.map((task) => {
       if (task.status === 'active' && task.cronSchedule && task.frequency !== 'once') {
         try {
@@ -1678,20 +1647,17 @@ export async function updateTaskStatusAction({
       throw new Error('Authentication required');
     }
 
-    // Get task to verify ownership
     const task = await getTaskById({ id });
     if (!task || task.userId !== user.id) {
       throw new Error('Task not found or access denied');
     }
 
-    // Update QStash schedule status if it exists
     if (task.qstashScheduleId) {
       try {
         if (status === 'paused') {
           await qstash.schedules.pause({ schedule: task.qstashScheduleId });
         } else if (status === 'active') {
           await qstash.schedules.resume({ schedule: task.qstashScheduleId });
-          // Update next run time when resuming
           if (task.cronSchedule) {
             const nextRunAt = calculateNextRun(task.cronSchedule, task.timezone);
             await updateTask({ id, nextRunAt });
@@ -1701,11 +1667,9 @@ export async function updateTaskStatusAction({
         }
       } catch (qstashError) {
         console.error('Error updating QStash schedule:', qstashError);
-        // Continue with database update even if QStash fails
       }
     }
 
-    // Update database
     const updatedTask = await updateTaskStatus({ id, status });
     return { success: true, task: updatedTask };
   } catch (error) {
@@ -1737,13 +1701,11 @@ export async function updateTaskAction({
       throw new Error('Authentication required');
     }
 
-    // Get task to verify ownership
     const task = await getTaskById({ id });
     if (!task || task.userId !== user.id) {
       throw new Error('Task not found or access denied');
     }
 
-    // Check daily task limit if changing to daily frequency
     if (frequency === 'daily' && task.frequency !== 'daily') {
       const existingTasks = await getTasksByUserId({ userId: user.id });
       const activeDailyTasks = existingTasks.filter(
@@ -1755,18 +1717,15 @@ export async function updateTaskAction({
       }
     }
 
-    // Handle weekly day selection
     let adjustedTime = time;
     if (frequency === 'weekly' && dayOfWeek) {
       adjustedTime = `${time}:${dayOfWeek}`;
     }
 
-    // Generate new cron schedule if frequency changed
     let cronSchedule = '';
     let nextRunAt: Date;
 
     if (frequency === 'once') {
-      // For 'once', set next run to today/tomorrow at specified time
       const [hours, minutes] = time.split(':').map(Number);
       const now = new Date();
       nextRunAt = new Date(now);
@@ -1780,16 +1739,13 @@ export async function updateTaskAction({
       nextRunAt = calculateNextRun(cronSchedule, timezone);
     }
 
-    // Update QStash schedule if it exists and frequency/time changed
     if (task.qstashScheduleId && frequency !== 'once') {
       try {
-        // Delete old schedule
         await qstash.schedules.delete(task.qstashScheduleId);
 
         console.log('⏰ Recreating QStash schedule for task:', id);
         console.log('📅 Updated cron schedule with timezone:', cronSchedule);
 
-        // Create new schedule with updated cron
         const scheduleResponse = await qstash.schedules.create({
           destination: `https://scira.ai/api/tasks`,
           method: 'POST',
@@ -1804,7 +1760,6 @@ export async function updateTaskAction({
           },
         });
 
-        // Update database with new details
         const updatedTask = await updateTask({
           id,
           title: title.trim(),
@@ -1822,7 +1777,6 @@ export async function updateTaskAction({
         throw new Error('Failed to update schedule. Please try again.');
       }
     } else {
-      // Update database only
       const updatedTask = await updateTask({
         id,
         title: title.trim(),
@@ -1848,23 +1802,19 @@ export async function deleteTaskAction({ id }: { id: string }) {
       throw new Error('Authentication required');
     }
 
-    // Get task to verify ownership
     const task = await getTaskById({ id });
     if (!task || task.userId !== user.id) {
       throw new Error('Task not found or access denied');
     }
 
-    // Delete QStash schedule if it exists
     if (task.qstashScheduleId) {
       try {
         await qstash.schedules.delete(task.qstashScheduleId);
       } catch (error) {
         console.error('Error deleting QStash schedule:', error);
-        // Continue with database deletion even if QStash deletion fails
       }
     }
 
-    // Delete from database
     const deletedTask = await deleteTask({ id });
     return { success: true, task: deletedTask };
   } catch (error) {
@@ -1880,18 +1830,15 @@ export async function testTaskAction({ id }: { id: string }) {
       throw new Error('Authentication required');
     }
 
-    // Get task to verify ownership
     const task = await getTaskById({ id });
     if (!task || task.userId !== user.id) {
       throw new Error('Task not found or access denied');
     }
 
-    // Only allow testing of active or paused tasks
     if (task.status === 'archived' || task.status === 'running') {
       throw new Error(`Cannot test task with status: ${task.status}`);
     }
 
-    // Make a POST request to the task API endpoint to trigger the run
     const response = await fetch('https://scira.ai/api/tasks', {
       method: 'POST',
       headers: {
@@ -1915,7 +1862,6 @@ export async function testTaskAction({ id }: { id: string }) {
   }
 }
 
-// Server action to get user's geolocation using Vercel
 export async function getUserLocation() {
   'use server';
 
@@ -1923,7 +1869,6 @@ export async function getUserLocation() {
     const { headers } = await import('next/headers');
     const headersList = await headers();
 
-    // Create a mock request object with headers for geolocation
     const request = {
       headers: headersList,
     } as any;

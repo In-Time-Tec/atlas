@@ -1110,7 +1110,7 @@ const FormComponent: React.FC<FormComponentProps> = ({
 
     try {
       console.log('Uploading file:', file.name, file.type, file.size);
-      const response = await fetch('/api/upload', {
+      const response = await fetch('/api/files', {
         method: 'POST',
         body: formData,
       });
@@ -1118,7 +1118,14 @@ const FormComponent: React.FC<FormComponentProps> = ({
       if (response.ok) {
         const data = await response.json();
         console.log('Upload successful:', data);
-        return data;
+        return {
+          name: data.filename,
+          contentType: data.contentType,
+          url: data.url,
+          size: data.size,
+          isFromLibrary: true,
+          libraryFileId: data.id,
+        };
       } else {
         const errorText = await response.text();
         console.error('Upload failed with status:', response.status, errorText);
@@ -2039,47 +2046,48 @@ const FormComponent: React.FC<FormComponentProps> = ({
                 </div>
 
                 <div className={cn('flex items-center flex-shrink-0 gap-2')}>
-                  <DropdownMenu open={showAttachmentMenu} onOpenChange={setShowAttachmentMenu}>
-                    <Tooltip delayDuration={300}>
-                      <TooltipTrigger asChild>
-                        {hasVisionSupport(selectedModel) ? (
-                          <DropdownMenuTrigger asChild>
+                  {user ? (
+                    <DropdownMenu open={showAttachmentMenu} onOpenChange={setShowAttachmentMenu}>
+                      <Tooltip delayDuration={300}>
+                        <TooltipTrigger asChild>
+                          {hasVisionSupport(selectedModel) ? (
+                            <DropdownMenuTrigger asChild>
+                              <button
+                                className="group rounded-lg p-1.75 h-8 w-8 border border-border bg-background text-foreground hover:bg-accent transition-colors duration-200 flex items-center justify-center"
+                                onClick={(event) => {
+                                  event.preventDefault();
+                                  event.stopPropagation();
+                                  setShowAttachmentMenu(!showAttachmentMenu);
+                                }}
+                              >
+                                <HugeiconsIcon icon={DocumentAttachmentIcon} size={16} />
+                              </button>
+                            </DropdownMenuTrigger>
+                          ) : (
                             <button
-                              className="group rounded-lg p-1.75 h-8 w-8 border border-border bg-background text-foreground hover:bg-accent transition-colors duration-200 flex items-center justify-center"
-                              onClick={(event) => {
-                                event.preventDefault();
-                                event.stopPropagation();
-                                setShowAttachmentMenu(!showAttachmentMenu);
-                              }}
+                              className="group rounded-lg p-1.75 h-8 w-8 border border-border bg-muted text-muted-foreground cursor-not-allowed opacity-50 transition-colors duration-200 flex items-center justify-center"
+                              disabled
                             >
                               <HugeiconsIcon icon={DocumentAttachmentIcon} size={16} />
                             </button>
-                          </DropdownMenuTrigger>
-                        ) : (
-                          <button
-                            className="group rounded-lg p-1.75 h-8 w-8 border border-border bg-muted text-muted-foreground cursor-not-allowed opacity-50 transition-colors duration-200 flex items-center justify-center"
-                            disabled
-                          >
-                            <HugeiconsIcon icon={DocumentAttachmentIcon} size={16} />
-                          </button>
-                        )}
-                      </TooltipTrigger>
-                      <TooltipContent
-                        side="bottom"
-                        sideOffset={6}
-                        className="border-0 backdrop-blur-xs py-2 px-3 !shadow-none"
-                      >
-                        <div className="flex flex-col gap-0.5">
-                          <span className="font-medium text-[11px]">
-                            {hasVisionSupport(selectedModel) ? 'Attach File' : 'File Upload Unavailable'}
-                          </span>
-                          <span className="text-[10px] text-accent leading-tight">
-                            {hasVisionSupport(selectedModel)
-                              ? hasPdfSupport(selectedModel)
-                                ? 'Upload an image or PDF document'
-                                : 'Upload an image'
-                              : 'Selected model does not support file uploads'}
-                          </span>
+                          )}
+                        </TooltipTrigger>
+                        <TooltipContent
+                          side="bottom"
+                          sideOffset={6}
+                          className="border-0 backdrop-blur-xs py-2 px-3 !shadow-none"
+                        >
+                          <div className="flex flex-col gap-0.5">
+                            <span className="font-medium text-[11px]">
+                              {hasVisionSupport(selectedModel) ? 'Attach File' : 'File Upload Unavailable'}
+                            </span>
+                            <span className="text-[10px] text-accent leading-tight">
+                              {hasVisionSupport(selectedModel)
+                                ? hasPdfSupport(selectedModel)
+                                  ? 'Upload an image or PDF document'
+                                  : 'Upload an image'
+                                : 'Selected model does not support file uploads'}
+                            </span>
                         </div>
                       </TooltipContent>
                     </Tooltip>
@@ -2096,6 +2104,7 @@ const FormComponent: React.FC<FormComponentProps> = ({
                       </DropdownMenuContent>
                     )}
                   </DropdownMenu>
+                  ) : null}
 
                   {isProcessing ? (
                     <Tooltip delayDuration={300}>
