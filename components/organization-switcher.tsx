@@ -89,34 +89,21 @@ export function OrganizationSwitcher({ className }: { className?: string }) {
     <>
       <DropdownMenu >
         <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
+          <button
             role="combobox"
-            size="sm"
             className={cn(
-              'flex my-1 px-3 py-5 h-7.5 rounded-md justify-start',
-              'text-foreground',
-              'hover:bg-accent transition-colors',
-              'focus:!outline-none focus:!ring-0',
-              'shadow-none',
-              'w-full justify-between',
+              'flex w-full items-center gap-3 rounded-md px-2 py-1.5 text-sm outline-none ring-ring transition-colors',
+              'hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+              'focus-visible:ring-2',
+              'data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground',
               className
             )}
             disabled={isLoading}
           >
-            <div className="flex items-center gap-2 min-w-0">
-              <Avatar className="h-6 w-6">
-                {currentOrg?.logo && <AvatarImage src={currentOrg.logo} alt={displayName} />}
-                <AvatarFallback className="text-xs">
-                  {currentOrg ? <Building2 className="h-3 w-3" /> : <User className="h-3 w-3" />}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex flex-col items-start min-w-0">
-                <span className="text-xs font-medium truncate w-full">{displayName}</span>
-              </div>
-            </div>
-            <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
-          </Button>
+            {currentOrg ? <Building2 size={18} strokeWidth={1.5} className="shrink-0" /> : <User size={18} strokeWidth={1.5} className="shrink-0" />}
+            <span className="flex-1 truncate text-left">{displayName}</span>
+            <ChevronsUpDown className="ml-auto h-4 w-4 shrink-0 opacity-50" />
+          </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent 
           className="w-[90vw] sm:w-[16em] max-w-[16em] p-0 font-sans rounded-lg bg-popover z-40 border !shadow-none" 

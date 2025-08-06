@@ -2107,7 +2107,7 @@ const FormComponent: React.FC<FormComponentProps> = ({
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={openLibraryDialog}>
                             <FolderOpen className="w-4 h-4 mr-2" />
-                            Browse Library
+                            Browse Files
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       )}

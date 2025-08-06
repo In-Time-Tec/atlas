@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { FolderOpen, Crown, Binoculars, House, Plus, Gear } from '@phosphor-icons/react';
+import { FolderOpen, Crown, Binoculars, ChatCircle, Plus, Gear } from '@phosphor-icons/react';
 import { useUserData } from '@/hooks/use-user-data';
 import { useSession } from '@/lib/auth-client';
 import { useCurrentOrganization } from '@/hooks/use-organization';
@@ -16,10 +16,14 @@ import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarSeparator,
 } from '@/components/ui/sidebar';
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
@@ -42,7 +46,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <div className="flex items-center justify-between px-2 py-2">
+            <div className="flex items-center justify-between px-3 py-2">
               <div className="flex items-center gap-3">
                 <div className="flex aspect-square size-8 items-center justify-center rounded-lg overflow-hidden bg-black">
                   <Image src="/atlas.png" alt="Atlas logo" width={32} height={32} className="size-full object-cover" />
@@ -60,7 +64,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                       size="icon"
                       className="h-8 w-8 rounded-lg hover:bg-accent/80 transition-all hover:scale-105"
                     >
-                      <Plus size={16} className="transition-all hover:rotate-90" />
+                      <Plus size={20} className="transition-all hover:rotate-90" />
                     </Button>
                   </Link>
                 </TooltipTrigger>
@@ -70,16 +74,26 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               </Tooltip>
             </div>
           </SidebarMenuItem>
-          {showAuthRoutes && (
-            <SidebarMenuItem>
-              <OrganizationSwitcher />
-            </SidebarMenuItem>
-          )}
         </SidebarMenu>
+        <SidebarSeparator />
       </SidebarHeader>
-      <SidebarContent className="px-2">
-        <SidebarMenu>
-          <SidebarMenuItem>
+      <SidebarContent>
+        {showAuthRoutes && (
+          <SidebarGroup>
+            <SidebarGroupLabel asChild className='text-dark px-2.5'>
+              <OrganizationSwitcher />
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu className="px-3">
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={pathname === '/files'}>
+                    <Link href="/files" className="flex items-center gap-3">
+                      <FolderOpen size={16} />
+                      <span className="text-xs">Files</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
             <SidebarMenuButton
               asChild
               isActive={
@@ -87,8 +101,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               }
             >
               <Link href="/" className="flex items-center gap-3">
-                <House size={20} />
-                <span>Home</span>
+                <ChatCircle size={16} />
+                <span className="text-xs">Chat</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -97,32 +111,37 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               <SidebarMenuItem>
                 <SidebarMenuButton asChild isActive={pathname === '/tasks'}>
                   <Link href="/tasks" className="flex items-center gap-3">
-                    <Binoculars size={20} />
-                    <span>Tasks</span>
+                    <Binoculars size={16} />
+                    <span className="text-xs">Tasks</span>
                   </Link>
                 </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={pathname === '/library'}>
-                  <Link href="/library" className="flex items-center gap-3">
-                    <FolderOpen size={20} />
-                    <span>Library</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              {currentOrg && (
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={pathname === '/organization/settings'}>
-                    <Link href="/organization/settings" className="flex items-center gap-3">
-                      <Gear size={20} />
-                      <span>Organization Settings</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              )}
+              </SidebarMenuItem>              
             </>
           )}
-        </SidebarMenu>
+                {currentOrg && (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild isActive={pathname === '/organization/settings'}>
+                      <Link href="/organization/settings" className="flex items-center gap-3">
+                        <Gear size={16} />
+                        <span className="text-xs">Settings</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )}
+                {!currentOrg && (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild isActive={pathname === '/organization/settings'}>
+                      <Link href="/organization/settings" className="flex items-center gap-3">
+                        <Gear size={16} />
+                        <span className="text-xs">Settings</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
       <SidebarFooter>
         <SidebarMenu>

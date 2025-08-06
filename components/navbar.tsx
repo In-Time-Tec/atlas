@@ -160,7 +160,7 @@ const Navbar = memo(
               </Button>
             </Link>
             {user && (
-              <Link href="/library">
+              <Link href="/files">
                 <Button
                   type="button"
                   variant="ghost"
@@ -169,7 +169,7 @@ const Navbar = memo(
                 >
                   <FolderOpen size={16} className="group-hover:scale-110 transition-all" />
                   <span className="text-sm ml-1.5 group-hover:block hidden animate-in fade-in duration-300">
-                    Library
+                    Files
                   </span>
                 </Button>
               </Link>

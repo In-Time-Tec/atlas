@@ -27,7 +27,7 @@ import {
 } from '@hugeicons/core-free-icons';
 import { useFiles } from '@/hooks/use-files';
 import { formatBytes } from '@/lib/utils';
-import { FileIcon } from '@/app/library/file-icon';
+import { FileIcon } from '@/app/files/file-icon';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface FileData {
