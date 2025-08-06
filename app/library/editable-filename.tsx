@@ -30,7 +30,7 @@ export function EditableFilename({ file, isEditing, onEditingChange }: EditableF
 
   const handleSave = async () => {
     const trimmedValue = value.trim();
-    
+
     if (!trimmedValue) {
       toast.error('Filename cannot be empty');
       setValue(file.filename || '');

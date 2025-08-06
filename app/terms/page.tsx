@@ -53,9 +53,7 @@ export default function TermsPage() {
 
             <motion.div variants={item} className="text-center">
               <h1 className="text-4xl font-bold tracking-tight">Terms of Service</h1>
-              <p className="text-muted-foreground mt-3">
-                Last updated: July 24, 2025
-              </p>
+              <p className="text-muted-foreground mt-3">Last updated: July 24, 2025</p>
             </motion.div>
           </motion.div>
         </div>
@@ -167,9 +165,9 @@ export default function TermsPage() {
             </li>
           </ul>
           <p>
-            <strong>Important:</strong> Atlas AI does not store any payment card details, bank information, or other 
-            sensitive payment data. All payment information is processed directly by our payment providers according 
-            to their respective privacy policies and security standards.
+            <strong>Important:</strong> Atlas AI does not store any payment card details, bank information, or other
+            sensitive payment data. All payment information is processed directly by our payment providers according to
+            their respective privacy policies and security standards.
           </p>
           <p>For paid subscriptions:</p>
           <ul>
@@ -283,10 +281,7 @@ export default function TermsPage() {
               <Link href="/terms" className="text-foreground font-medium">
                 Terms
               </Link>
-              <Link
-                href="/privacy-policy"
-                className="hover:text-foreground transition-colors"
-              >
+              <Link href="/privacy-policy" className="hover:text-foreground transition-colors">
                 Privacy
               </Link>
             </div>

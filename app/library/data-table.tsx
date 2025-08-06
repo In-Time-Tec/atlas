@@ -24,11 +24,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { HugeiconsIcon } from '@hugeicons/react';
-import {
-  ArrowLeft02Icon,
-  ArrowRight02Icon,
-  Settings02Icon,
-} from '@hugeicons/core-free-icons';
+import { ArrowLeft02Icon, ArrowRight02Icon, Settings02Icon } from '@hugeicons/core-free-icons';
 
 import { FileData } from './columns';
 
@@ -54,15 +50,14 @@ export function DataTable({
     return saved ? JSON.parse(saved) : {};
   });
   const [rowSelection, setRowSelection] = React.useState({});
-  
+
   const [pagination, setPagination] = React.useState<PaginationState>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('library-pagination');
       if (saved) {
         try {
           return JSON.parse(saved);
-        } catch {
-        }
+        } catch {}
       }
     }
     return {
@@ -116,7 +111,7 @@ export function DataTable({
   React.useEffect(() => {
     const maxPageIndex = Math.max(0, Math.ceil(data.length / pagination.pageSize) - 1);
     if (pagination.pageIndex > maxPageIndex) {
-      setPagination(prev => ({ ...prev, pageIndex: maxPageIndex }));
+      setPagination((prev) => ({ ...prev, pageIndex: maxPageIndex }));
     }
   }, [data.length, pagination.pageSize, pagination.pageIndex]);
 
@@ -159,12 +154,15 @@ export function DataTable({
           <table className="w-full caption-bottom text-sm">
             <thead className="[&_tr]:border-b sticky top-0 z-10 bg-background">
               {table.getHeaderGroups().map((headerGroup) => (
-                <tr key={headerGroup.id} className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
+                <tr
+                  key={headerGroup.id}
+                  className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted"
+                >
                   {headerGroup.headers.map((header) => {
                     return (
-                      <th 
-                        key={header.id} 
-                        style={{ width: header.getSize() }} 
+                      <th
+                        key={header.id}
+                        style={{ width: header.getSize() }}
                         className="h-9 px-3 text-left align-middle font-medium text-muted-foreground text-xs [&:has([role=checkbox])]:pr-0 bg-background"
                       >
                         {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
@@ -177,7 +175,11 @@ export function DataTable({
             <tbody className="[&_tr:last-child]:border-0">
               {table.getRowModel().rows?.length ? (
                 table.getRowModel().rows.map((row) => (
-                  <tr key={row.id} data-state={row.getIsSelected() && 'selected'} className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
+                  <tr
+                    key={row.id}
+                    data-state={row.getIsSelected() && 'selected'}
+                    className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted"
+                  >
                     {row.getVisibleCells().map((cell) => (
                       <td key={cell.id} className="py-1.5 px-3 align-middle text-xs [&:has([role=checkbox])]:pr-0">
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -213,7 +215,7 @@ export function DataTable({
               value={pagination.pageSize}
               onChange={(e) => {
                 const newSize = Number(e.target.value);
-                setPagination(prev => ({ ...prev, pageSize: newSize, pageIndex: 0 }));
+                setPagination((prev) => ({ ...prev, pageSize: newSize, pageIndex: 0 }));
               }}
             >
               {[10, 20, 30, 40, 50].map((pageSize) => (

@@ -256,9 +256,7 @@ export function useTasks() {
       const previousTasks = queryClient.getQueryData<Task[]>(taskKeys.lists());
 
       // Optimistically update
-      queryClient.setQueryData<Task[]>(taskKeys.lists(), (old = []) =>
-        old.filter((task) => task.id !== id),
-      );
+      queryClient.setQueryData<Task[]>(taskKeys.lists(), (old = []) => old.filter((task) => task.id !== id));
 
       return { previousTasks };
     },
@@ -393,8 +391,7 @@ export function useFilteredTasks(filter: 'active' | 'archived' | 'all' = 'all') 
   const { tasks, ...rest } = useTasks();
 
   const filteredTasks = tasks.filter((task) => {
-    if (filter === 'active')
-      return task.status === 'active' || task.status === 'paused' || task.status === 'running';
+    if (filter === 'active') return task.status === 'active' || task.status === 'paused' || task.status === 'running';
     if (filter === 'archived') return task.status === 'archived';
     return true;
   });

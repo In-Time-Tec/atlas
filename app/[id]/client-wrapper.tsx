@@ -28,7 +28,7 @@ export default function ClientWrapper({
     'atlas-custom-instructions-enabled',
     true,
   );
-  
+
   return (
     <Suspense>
       <SidebarProvider>
@@ -36,9 +36,7 @@ export default function ClientWrapper({
         <SidebarInset className="flex flex-col h-full">
           <PageHeader
             title=""
-            rightContent={
-              <ChatHistoryButton onClickAction={() => setCommandDialogOpen(true)} />
-            }
+            rightContent={<ChatHistoryButton onClickAction={() => setCommandDialogOpen(true)} />}
             user={user}
             subscriptionData={subscriptionData}
             isProUser={isProUser}

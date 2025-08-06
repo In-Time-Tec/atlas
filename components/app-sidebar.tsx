@@ -5,11 +5,13 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { FolderOpen, Crown, Binoculars, House, Plus } from '@phosphor-icons/react';
+import { FolderOpen, Crown, Binoculars, House, Plus, Gear } from '@phosphor-icons/react';
 import { useUserData } from '@/hooks/use-user-data';
 import { useSession } from '@/lib/auth-client';
+import { useCurrentOrganization } from '@/hooks/use-organization';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { OrganizationSwitcher } from '@/components/organization-switcher';
 import {
   Sidebar,
   SidebarContent,
@@ -24,16 +26,17 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname();
   const { user, isLoading } = useUserData();
   const { data: session, isPending: sessionPending } = useSession();
+  const { organization: currentOrg } = useCurrentOrganization();
   const [mounted, setMounted] = useState(false);
-  
+
   useEffect(() => {
     setMounted(true);
   }, []);
-  
+
   const isAuthenticated = !!(user || session);
   const authCheckComplete = mounted && !isLoading && !sessionPending;
-  const showLibrary = authCheckComplete && isAuthenticated;
-  
+  const showAuthRoutes = authCheckComplete && isAuthenticated;
+
   return (
     <Sidebar variant="inset" {...props}>
       <SidebarHeader>
@@ -67,19 +70,29 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               </Tooltip>
             </div>
           </SidebarMenuItem>
+          {showAuthRoutes && (
+            <SidebarMenuItem>
+              <OrganizationSwitcher />
+            </SidebarMenuItem>
+          )}
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent className="px-2">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild isActive={pathname === '/' || /^\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(pathname)}>
+            <SidebarMenuButton
+              asChild
+              isActive={
+                pathname === '/' || /^\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(pathname)
+              }
+            >
               <Link href="/" className="flex items-center gap-3">
                 <House size={20} />
                 <span>Home</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
-          {showLibrary && (
+          {showAuthRoutes && (
             <>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild isActive={pathname === '/tasks'}>
@@ -97,20 +110,22 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
+              {currentOrg && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={pathname === '/organization/settings'}>
+                    <Link href="/organization/settings" className="flex items-center gap-3">
+                      <Gear size={20} />
+                      <span>Organization Settings</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
             </>
           )}
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter>
         <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild>
-              <Link href="/pricing" className="flex items-center gap-3">
-                <Crown size={20} />
-                <span>Upgrade to Pro</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
     </Sidebar>

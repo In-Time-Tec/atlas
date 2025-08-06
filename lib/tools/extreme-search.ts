@@ -346,13 +346,13 @@ ${JSON.stringify(plan.plan)}
                   if (dataStream) {
                     dataStream.writeMessageAnnotation({
                       type: 'content',
-                    queryId: toolCallId,
-                    content: {
-                      title: content.title,
-                      url: content.url,
-                      text: content.content.slice(0, 500) + '...',
-                    },
-                  });
+                      queryId: toolCallId,
+                      content: {
+                        title: content.title,
+                        url: content.url,
+                        text: content.content.slice(0, 500) + '...',
+                      },
+                    });
                   }
                 });
 
@@ -370,7 +370,7 @@ ${JSON.stringify(plan.plan)}
                     });
                   });
                 }
-                // Update results with full content, but keep original results as fallback    
+                // Update results with full content, but keep original results as fallback
                 results = contentsResults.map((content) => {
                   const originalResult = results.find((r) => r.url === content.url);
                   return {

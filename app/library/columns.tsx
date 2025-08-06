@@ -3,18 +3,9 @@
 import { ColumnDef } from '@tanstack/react-table';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { HugeiconsIcon } from '@hugeicons/react';
-import {
-  ArrowUpDownIcon,
-  ArrowUp01Icon,
-  ArrowDown01Icon,
-} from '@hugeicons/core-free-icons';
+import { ArrowUpDownIcon, ArrowUp01Icon, ArrowDown01Icon } from '@hugeicons/core-free-icons';
 import { formatBytes } from '@/lib/utils';
 import { FileIcon } from './file-icon';
 import { FileActionsCell } from './file-actions-cell';
@@ -33,6 +24,7 @@ export interface FileData {
   folderName?: string | null;
   tags?: string[] | null;
   description?: string | null;
+  organizationId?: string | null;
 }
 
 interface ColumnContext {
@@ -68,12 +60,9 @@ export const createColumns = (context: ColumnContext): ColumnDef<FileData>[] => 
       const sorted = column.getIsSorted();
       const sortIndex = column.getSortIndex();
       const handleClick = (e: React.MouseEvent) => {
-        column.toggleSorting(
-          column.getIsSorted() === 'asc',
-          e.shiftKey
-        );
+        column.toggleSorting(column.getIsSorted() === 'asc', e.shiftKey);
       };
-      
+
       const getSortIcon = () => {
         if (sorted === 'asc') {
           return (
@@ -92,17 +81,12 @@ export const createColumns = (context: ColumnContext): ColumnDef<FileData>[] => 
         }
         return <HugeiconsIcon icon={ArrowUpDownIcon} size={14} className="ml-2" />;
       };
-      
+
       return (
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleClick}
-                className="h-8 px-1 lg:px-2 text-xs"
-              >
+              <Button variant="ghost" size="sm" onClick={handleClick} className="h-8 px-1 lg:px-2 text-xs">
                 Name
                 {getSortIcon()}
               </Button>
@@ -163,12 +147,9 @@ export const createColumns = (context: ColumnContext): ColumnDef<FileData>[] => 
       const sorted = column.getIsSorted();
       const sortIndex = column.getSortIndex();
       const handleClick = (e: React.MouseEvent) => {
-        column.toggleSorting(
-          column.getIsSorted() === 'asc',
-          e.shiftKey
-        );
+        column.toggleSorting(column.getIsSorted() === 'asc', e.shiftKey);
       };
-      
+
       const getSortIcon = () => {
         if (sorted === 'asc') {
           return (
@@ -187,17 +168,12 @@ export const createColumns = (context: ColumnContext): ColumnDef<FileData>[] => 
         }
         return <HugeiconsIcon icon={ArrowUpDownIcon} size={14} className="ml-2" />;
       };
-      
+
       return (
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleClick}
-                className="h-8 px-1 lg:px-2 text-xs"
-              >
+              <Button variant="ghost" size="sm" onClick={handleClick} className="h-8 px-1 lg:px-2 text-xs">
                 Size
                 {getSortIcon()}
               </Button>
@@ -223,12 +199,9 @@ export const createColumns = (context: ColumnContext): ColumnDef<FileData>[] => 
       const sorted = column.getIsSorted();
       const sortIndex = column.getSortIndex();
       const handleClick = (e: React.MouseEvent) => {
-        column.toggleSorting(
-          column.getIsSorted() === 'asc',
-          e.shiftKey
-        );
+        column.toggleSorting(column.getIsSorted() === 'asc', e.shiftKey);
       };
-      
+
       const getSortIcon = () => {
         if (sorted === 'asc') {
           return (
@@ -247,17 +220,12 @@ export const createColumns = (context: ColumnContext): ColumnDef<FileData>[] => 
         }
         return <HugeiconsIcon icon={ArrowUpDownIcon} size={14} className="ml-2" />;
       };
-      
+
       return (
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleClick}
-                className="h-8 px-1 lg:px-2 text-xs"
-              >
+              <Button variant="ghost" size="sm" onClick={handleClick} className="h-8 px-1 lg:px-2 text-xs">
                 Uploaded
                 {getSortIcon()}
               </Button>
@@ -300,12 +268,9 @@ export const createColumns = (context: ColumnContext): ColumnDef<FileData>[] => 
       const sorted = column.getIsSorted();
       const sortIndex = column.getSortIndex();
       const handleClick = (e: React.MouseEvent) => {
-        column.toggleSorting(
-          column.getIsSorted() === 'asc',
-          e.shiftKey
-        );
+        column.toggleSorting(column.getIsSorted() === 'asc', e.shiftKey);
       };
-      
+
       const getSortIcon = () => {
         if (sorted === 'asc') {
           return (
@@ -324,17 +289,12 @@ export const createColumns = (context: ColumnContext): ColumnDef<FileData>[] => 
         }
         return <HugeiconsIcon icon={ArrowUpDownIcon} size={14} className="ml-2" />;
       };
-      
+
       return (
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleClick}
-                className="h-8 px-1 lg:px-2 text-xs"
-              >
+              <Button variant="ghost" size="sm" onClick={handleClick} className="h-8 px-1 lg:px-2 text-xs">
                 Modified
                 {getSortIcon()}
               </Button>
@@ -384,10 +344,7 @@ export const createColumns = (context: ColumnContext): ColumnDef<FileData>[] => 
     id: 'actions',
     header: '',
     cell: ({ row }) => (
-      <FileActionsCell
-        file={row.original}
-        onRename={() => context.setEditingFileId(row.original.id)}
-      />
+      <FileActionsCell file={row.original} onRename={() => context.setEditingFileId(row.original.id)} />
     ),
     size: 50,
   },

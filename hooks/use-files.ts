@@ -37,6 +37,7 @@ interface FilesQueryParams {
   offset?: number;
   sortBy?: 'createdAt' | 'filename' | 'size';
   sortOrder?: 'asc' | 'desc';
+  organizationId?: string;
 }
 
 interface UploadFileData {
@@ -44,6 +45,7 @@ interface UploadFileData {
   folderId?: string;
   description?: string;
   tags?: string[];
+  organizationId?: string;
   onProgress?: (progress: number) => void;
 }
 
@@ -53,6 +55,7 @@ interface UpdateFileData {
   description?: string;
   tags?: string[];
   folderId?: string | null;
+  organizationId?: string;
 }
 
 const FILES_QUERY_KEY = 'files';
@@ -67,6 +70,7 @@ async function fetchFiles(params: FilesQueryParams = {}): Promise<FilesResponse>
   if (params.offset) searchParams.set('offset', params.offset.toString());
   if (params.sortBy) searchParams.set('sortBy', params.sortBy);
   if (params.sortOrder) searchParams.set('sortOrder', params.sortOrder);
+  if (params.organizationId) searchParams.set('organizationId', params.organizationId);
 
   const response = await fetch(`/api/files?${searchParams.toString()}`);
 
@@ -89,6 +93,9 @@ async function uploadFile(data: UploadFileData) {
   }
   if (data.tags && data.tags.length > 0) {
     formData.append('tags', data.tags.join(','));
+  }
+  if (data.organizationId) {
+    formData.append('organizationId', data.organizationId);
   }
 
   const xhr = new XMLHttpRequest();
@@ -124,7 +131,11 @@ async function uploadFile(data: UploadFileData) {
 }
 
 async function updateFile(data: UpdateFileData) {
-  const response = await fetch(`/api/files/${data.id}`, {
+  const url = data.organizationId
+    ? `/api/files/${data.id}?organizationId=${data.organizationId}`
+    : `/api/files/${data.id}`;
+
+  const response = await fetch(url, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
@@ -134,6 +145,7 @@ async function updateFile(data: UpdateFileData) {
       description: data.description,
       tags: data.tags,
       folderId: data.folderId,
+      organizationId: data.organizationId,
     }),
   });
 
@@ -144,8 +156,10 @@ async function updateFile(data: UpdateFileData) {
   return response.json();
 }
 
-async function deleteFile(id: string) {
-  const response = await fetch(`/api/files/${id}`, {
+async function deleteFile(id: string, organizationId?: string) {
+  const url = organizationId ? `/api/files/${id}?organizationId=${organizationId}` : `/api/files/${id}`;
+
+  const response = await fetch(url, {
     method: 'DELETE',
   });
 
@@ -203,7 +217,7 @@ export function useUpdateFile() {
         if (!old) return old;
         return {
           ...old,
-          files: old.files.map((file) => 
+          files: old.files.map((file) =>
             file.id === updateData.id
               ? {
                   ...file,
@@ -213,7 +227,7 @@ export function useUpdateFile() {
                   ...(updateData.folderId !== undefined && { folderId: updateData.folderId }),
                   updatedAt: new Date().toISOString(),
                 }
-              : file
+              : file,
           ),
         };
       });
@@ -233,9 +247,7 @@ export function useUpdateFile() {
         if (!old) return old;
         return {
           ...old,
-          files: old.files.map((file) => 
-            file.id === variables.id ? { ...file, ...data } : file
-          ),
+          files: old.files.map((file) => (file.id === variables.id ? { ...file, ...data } : file)),
         };
       });
       toast.success('File updated successfully');
@@ -247,8 +259,8 @@ export function useDeleteFile() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: deleteFile,
-    onMutate: async (fileId: string) => {
+    mutationFn: ({ id, organizationId }: { id: string; organizationId?: string }) => deleteFile(id, organizationId),
+    onMutate: async ({ id: fileId }: { id: string; organizationId?: string }) => {
       await queryClient.cancelQueries({ queryKey: [FILES_QUERY_KEY] });
 
       const previousData = queryClient.getQueriesData({ queryKey: [FILES_QUERY_KEY] });
@@ -285,10 +297,10 @@ export function useDeleteFiles() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (ids: string[]) => {
-      await Promise.all(ids.map((id) => deleteFile(id)));
+    mutationFn: async ({ ids, organizationId }: { ids: string[]; organizationId?: string }) => {
+      await Promise.all(ids.map((id) => deleteFile(id, organizationId)));
     },
-    onMutate: async (fileIds: string[]) => {
+    onMutate: async ({ ids: fileIds }: { ids: string[]; organizationId?: string }) => {
       await queryClient.cancelQueries({ queryKey: [FILES_QUERY_KEY] });
 
       const previousData = queryClient.getQueriesData({ queryKey: [FILES_QUERY_KEY] });
@@ -315,7 +327,7 @@ export function useDeleteFiles() {
       }
       toast.error(error.message || 'Failed to delete files');
     },
-    onSuccess: (_, ids) => {
+    onSuccess: (_, { ids }) => {
       toast.success(`${ids.length} files deleted successfully`);
     },
   });

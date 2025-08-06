@@ -6,6 +6,7 @@ import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { fileFolder } from '@/lib/db/schema';
 import { generateId } from 'ai';
+import { canUserAccessOrganizationFiles, canUserModifyOrganizationFiles } from '@/lib/organization-utils';
 
 const FolderCreateSchema = z.object({
   name: z.string().min(1).max(255),
@@ -18,6 +19,7 @@ const FolderListQuerySchema = z.object({
   parentId: z.string().optional(),
   sortBy: z.enum(['name', 'createdAt']).default('name'),
   sortOrder: z.enum(['asc', 'desc']).default('asc'),
+  organizationId: z.string().optional(),
 });
 
 export async function GET(request: NextRequest) {
@@ -32,18 +34,29 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const queryParams = Object.fromEntries(searchParams.entries());
-    
+
     const validatedParams = FolderListQuerySchema.safeParse(queryParams);
     if (!validatedParams.success) {
       return NextResponse.json(
         { error: 'Invalid query parameters', details: validatedParams.error.errors },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
-    const { parentId, sortBy, sortOrder } = validatedParams.data;
+    const { parentId, sortBy, sortOrder, organizationId } = validatedParams.data;
 
-    let whereConditions = [eq(fileFolder.userId, session.user.id)];
+    let whereConditions = [];
+
+    if (organizationId) {
+      const hasAccess = await canUserAccessOrganizationFiles(session.user.id, organizationId);
+      if (!hasAccess) {
+        return NextResponse.json({ error: 'Access denied to organization folders' }, { status: 403 });
+      }
+      whereConditions.push(eq(fileFolder.organizationId, organizationId));
+    } else {
+      whereConditions.push(eq(fileFolder.userId, session.user.id));
+      whereConditions.push(isNull(fileFolder.organizationId));
+    }
 
     if (parentId) {
       whereConditions.push(eq(fileFolder.parentId, parentId));
@@ -88,22 +101,32 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
+    const organizationId = body.organizationId;
+
+    if (organizationId) {
+      const canModify = await canUserModifyOrganizationFiles(session.user.id, organizationId);
+      if (!canModify) {
+        return NextResponse.json({ error: 'Access denied to create organization folders' }, { status: 403 });
+      }
+    }
+
     const validatedData = FolderCreateSchema.safeParse(body);
 
     if (!validatedData.success) {
-      return NextResponse.json(
-        { error: 'Invalid folder data', details: validatedData.error.errors },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Invalid folder data', details: validatedData.error.errors }, { status: 400 });
     }
 
     const { name, parentId, color, icon } = validatedData.data;
 
     if (parentId) {
+      const folderConditions = organizationId
+        ? [eq(fileFolder.id, parentId), eq(fileFolder.organizationId, organizationId)]
+        : [eq(fileFolder.id, parentId), eq(fileFolder.userId, session.user.id)];
+
       const parentFolder = await db
         .select()
         .from(fileFolder)
-        .where(and(eq(fileFolder.id, parentId), eq(fileFolder.userId, session.user.id)))
+        .where(and(...folderConditions))
         .limit(1);
 
       if (!parentFolder.length) {
@@ -114,6 +137,7 @@ export async function POST(request: NextRequest) {
     const folderRecord = {
       id: generateId(),
       userId: session.user.id,
+      organizationId: organizationId || null,
       name,
       parentId: parentId || null,
       color: color || null,
@@ -132,6 +156,7 @@ export async function POST(request: NextRequest) {
       icon: folderRecord.icon,
       createdAt: folderRecord.createdAt,
       updatedAt: folderRecord.updatedAt,
+      organizationId: folderRecord.organizationId,
     });
   } catch (error) {
     console.error('Error creating folder:', error);

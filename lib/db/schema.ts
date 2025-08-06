@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, boolean, json, varchar, integer } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, boolean, json, varchar, integer, index } from 'drizzle-orm/pg-core';
 import { generateId } from 'ai';
 import { InferSelectModel } from 'drizzle-orm';
 
@@ -23,6 +23,7 @@ export const session = pgTable('session', {
   userId: text('user_id')
     .notNull()
     .references(() => user.id, { onDelete: 'cascade' }),
+  activeOrganizationId: text('active_organization_id'),
 });
 
 export const account = pgTable('account', {
@@ -52,21 +53,28 @@ export const verification = pgTable('verification', {
   updatedAt: timestamp('updated_at'),
 });
 
-export const chat = pgTable('chat', {
-  id: text('id')
-    .primaryKey()
-    .notNull()
-    .$defaultFn(() => generateId()),
-  userId: text('userId')
-    .notNull()
-    .references(() => user.id),
-  title: text('title').notNull().default('New Chat'),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
-  visibility: varchar('visibility', { enum: ['public', 'private'] })
-    .notNull()
-    .default('private'),
-});
+export const chat = pgTable(
+  'chat',
+  {
+    id: text('id')
+      .primaryKey()
+      .notNull()
+      .$defaultFn(() => generateId()),
+    userId: text('userId')
+      .notNull()
+      .references(() => user.id),
+    organizationId: text('organization_id'),
+    title: text('title').notNull().default('New Chat'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+    visibility: varchar('visibility', { enum: ['public', 'private'] })
+      .notNull()
+      .default('private'),
+  },
+  (table) => ({
+    userOrgIdx: index('chat_user_org_idx').on(table.userId, table.organizationId),
+  }),
+);
 
 export const message = pgTable('message', {
   id: text('id')
@@ -92,71 +100,101 @@ export const stream = pgTable('stream', {
   createdAt: timestamp('createdAt').notNull().defaultNow(),
 });
 
-export const subscription = pgTable('subscription', {
-  id: text('id').primaryKey(),
-  createdAt: timestamp('createdAt').notNull(),
-  modifiedAt: timestamp('modifiedAt'),
-  amount: integer('amount').notNull(),
-  currency: text('currency').notNull(),
-  recurringInterval: text('recurringInterval').notNull(),
-  status: text('status').notNull(),
-  currentPeriodStart: timestamp('currentPeriodStart').notNull(),
-  currentPeriodEnd: timestamp('currentPeriodEnd').notNull(),
-  cancelAtPeriodEnd: boolean('cancelAtPeriodEnd').notNull().default(false),
-  canceledAt: timestamp('canceledAt'),
-  startedAt: timestamp('startedAt').notNull(),
-  endsAt: timestamp('endsAt'),
-  endedAt: timestamp('endedAt'),
-  customerId: text('customerId').notNull(),
-  productId: text('productId').notNull(),
-  discountId: text('discountId'),
-  checkoutId: text('checkoutId').notNull(),
-  customerCancellationReason: text('customerCancellationReason'),
-  customerCancellationComment: text('customerCancellationComment'),
-  metadata: text('metadata'),
-  customFieldData: text('customFieldData'),
-  userId: text('userId').references(() => user.id),
-});
+export const subscription = pgTable(
+  'subscription',
+  {
+    id: text('id').primaryKey(),
+    createdAt: timestamp('createdAt').notNull(),
+    modifiedAt: timestamp('modifiedAt'),
+    amount: integer('amount').notNull(),
+    currency: text('currency').notNull(),
+    recurringInterval: text('recurringInterval').notNull(),
+    status: text('status').notNull(),
+    currentPeriodStart: timestamp('currentPeriodStart').notNull(),
+    currentPeriodEnd: timestamp('currentPeriodEnd').notNull(),
+    cancelAtPeriodEnd: boolean('cancelAtPeriodEnd').notNull().default(false),
+    canceledAt: timestamp('canceledAt'),
+    startedAt: timestamp('startedAt').notNull(),
+    endsAt: timestamp('endsAt'),
+    endedAt: timestamp('endedAt'),
+    customerId: text('customerId').notNull(),
+    productId: text('productId').notNull(),
+    discountId: text('discountId'),
+    checkoutId: text('checkoutId').notNull(),
+    customerCancellationReason: text('customerCancellationReason'),
+    customerCancellationComment: text('customerCancellationComment'),
+    metadata: text('metadata'),
+    customFieldData: text('customFieldData'),
+    userId: text('userId').references(() => user.id),
+    organizationId: text('organizationId').references(() => organization.id),
+    seats: integer('seats').default(1),
+    pricePerSeat: integer('pricePerSeat'),
+  },
+  (table) => ({
+    userOrgIdx: index('subscription_user_org_idx').on(table.userId, table.organizationId),
+  }),
+);
 
-export const extremeSearchUsage = pgTable('extreme_search_usage', {
-  id: text('id')
-    .primaryKey()
-    .$defaultFn(() => generateId()),
-  userId: text('user_id')
-    .notNull()
-    .references(() => user.id, { onDelete: 'cascade' }),
-  searchCount: integer('search_count').notNull().default(0),
-  date: timestamp('date').notNull().defaultNow(),
-  resetAt: timestamp('reset_at').notNull(),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at').notNull().defaultNow(),
-});
+export const extremeSearchUsage = pgTable(
+  'extreme_search_usage',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => generateId()),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    organizationId: text('organization_id'),
+    searchCount: integer('search_count').notNull().default(0),
+    date: timestamp('date').notNull().defaultNow(),
+    resetAt: timestamp('reset_at').notNull(),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  },
+  (table) => ({
+    userOrgIdx: index('extreme_search_usage_user_org_idx').on(table.userId, table.organizationId),
+  }),
+);
 
-export const messageUsage = pgTable('message_usage', {
-  id: text('id')
-    .primaryKey()
-    .$defaultFn(() => generateId()),
-  userId: text('user_id')
-    .notNull()
-    .references(() => user.id, { onDelete: 'cascade' }),
-  messageCount: integer('message_count').notNull().default(0),
-  date: timestamp('date').notNull().defaultNow(),
-  resetAt: timestamp('reset_at').notNull(),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at').notNull().defaultNow(),
-});
+export const messageUsage = pgTable(
+  'message_usage',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => generateId()),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    organizationId: text('organization_id'),
+    messageCount: integer('message_count').notNull().default(0),
+    date: timestamp('date').notNull().defaultNow(),
+    resetAt: timestamp('reset_at').notNull(),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  },
+  (table) => ({
+    userOrgIdx: index('message_usage_user_org_idx').on(table.userId, table.organizationId),
+  }),
+);
 
-export const customInstructions = pgTable('custom_instructions', {
-  id: text('id')
-    .primaryKey()
-    .$defaultFn(() => generateId()),
-  userId: text('user_id')
-    .notNull()
-    .references(() => user.id, { onDelete: 'cascade' }),
-  content: text('content').notNull(),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at').notNull().defaultNow(),
-});
+export const customInstructions = pgTable(
+  'custom_instructions',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => generateId()),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    organizationId: text('organization_id'),
+    content: text('content').notNull(),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  },
+  (table) => ({
+    userOrgIdx: index('custom_instructions_user_org_idx').on(table.userId, table.organizationId),
+  }),
+);
 
 export const payment = pgTable('payment', {
   id: text('id').primaryKey(),
@@ -192,43 +230,57 @@ export const payment = pgTable('payment', {
   userId: text('user_id').references(() => user.id),
 });
 
-export const fileFolder = pgTable('file_folder', {
-  id: text('id')
-    .primaryKey()
-    .$defaultFn(() => generateId()),
-  userId: text('user_id')
-    .notNull()
-    .references(() => user.id, { onDelete: 'cascade' }),
-  name: text('name').notNull(),
-  parentId: text('parent_id'),
-  color: text('color'),
-  icon: text('icon'),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at').notNull().defaultNow(),
-});
+export const fileFolder = pgTable(
+  'file_folder',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => generateId()),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    organizationId: text('organization_id'),
+    name: text('name').notNull(),
+    parentId: text('parent_id'),
+    color: text('color'),
+    icon: text('icon'),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  },
+  (table) => ({
+    userOrgIdx: index('file_folder_user_org_idx').on(table.userId, table.organizationId),
+  }),
+);
 
-export const fileLibrary = pgTable('file_library', {
-  id: text('id')
-    .primaryKey()
-    .$defaultFn(() => generateId()),
-  userId: text('user_id')
-    .notNull()
-    .references(() => user.id, { onDelete: 'cascade' }),
-  filename: text('filename').notNull(),
-  originalName: text('original_name').notNull(),
-  contentType: text('content_type').notNull(),
-  size: integer('size').notNull(),
-  url: text('url').notNull(),
-  thumbnailUrl: text('thumbnail_url'),
-  folderId: text('folder_id').references(() => fileFolder.id, { onDelete: 'set null' }),
-  tags: json('tags').$type<string[]>(),
-  description: text('description'),
-  metadata: json('metadata'),
-  isPublic: boolean('is_public').notNull().default(false),
-  publicId: text('public_id').unique(),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at').notNull().defaultNow(),
-});
+export const fileLibrary = pgTable(
+  'file_library',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => generateId()),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    organizationId: text('organization_id'),
+    filename: text('filename').notNull(),
+    originalName: text('original_name').notNull(),
+    contentType: text('content_type').notNull(),
+    size: integer('size').notNull(),
+    url: text('url').notNull(),
+    thumbnailUrl: text('thumbnail_url'),
+    folderId: text('folder_id').references(() => fileFolder.id, { onDelete: 'set null' }),
+    tags: json('tags').$type<string[]>(),
+    description: text('description'),
+    metadata: json('metadata'),
+    isPublic: boolean('is_public').notNull().default(false),
+    publicId: text('public_id').unique(),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  },
+  (table) => ({
+    userOrgIdx: index('file_library_user_org_idx').on(table.userId, table.organizationId),
+  }),
+);
 
 export const fileUsage = pgTable('file_usage', {
   id: text('id')
@@ -256,43 +308,126 @@ export const fileShare = pgTable('file_share', {
   sharedByUserId: text('shared_by_user_id')
     .notNull()
     .references(() => user.id, { onDelete: 'cascade' }),
-  sharedWithUserId: text('shared_with_user_id')
-    .references(() => user.id, { onDelete: 'cascade' }),
+  sharedWithUserId: text('shared_with_user_id').references(() => user.id, { onDelete: 'cascade' }),
   shareToken: text('share_token').unique(),
   permissions: text('permissions').notNull().default('read'),
   expiresAt: timestamp('expires_at'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 
-// Tasks table for scheduled searches
-export const tasks = pgTable('tasks', {
-  id: text('id')
-    .primaryKey()
-    .$defaultFn(() => generateId()),
+export const tasks = pgTable(
+  'tasks',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => generateId()),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    organizationId: text('organization_id'),
+    title: text('title').notNull(),
+    prompt: text('prompt').notNull(),
+    frequency: text('frequency').notNull(),
+    cronSchedule: text('cron_schedule').notNull(),
+    timezone: text('timezone').notNull().default('UTC'),
+    nextRunAt: timestamp('next_run_at').notNull(),
+    qstashScheduleId: text('qstash_schedule_id'),
+    status: text('status').notNull().default('active'),
+    lastRunAt: timestamp('last_run_at'),
+    lastRunChatId: text('last_run_chat_id'),
+    runHistory: json('run_history')
+      .$type<
+        Array<{
+          runAt: string;
+          chatId: string;
+          status: 'success' | 'error' | 'timeout';
+          error?: string;
+          duration?: number;
+          tokensUsed?: number;
+          searchesPerformed?: number;
+        }>
+      >()
+      .default([]),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  },
+  (table) => ({
+    userOrgIdx: index('tasks_user_org_idx').on(table.userId, table.organizationId),
+  }),
+);
+
+export const organization = pgTable(
+  'organization',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => generateId()),
+    name: text('name').notNull(),
+    slug: text('slug').notNull().unique(),
+    logo: text('logo'),
+    metadata: json('metadata').$type<Record<string, any>>().default({}),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  },
+  (table) => ({
+    slugIdx: index('organization_slug_idx').on(table.slug),
+  }),
+);
+
+export type OrganizationRole = 'owner' | 'admin' | 'member' | 'viewer';
+
+export const organizationMember = pgTable(
+  'organization_member',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => generateId()),
+    organizationId: text('organization_id')
+      .notNull()
+      .references(() => organization.id, { onDelete: 'cascade' }),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    role: text('role').notNull().default('member'),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  },
+  (table) => ({
+    userOrgIdx: index('org_member_user_org_idx').on(table.userId, table.organizationId),
+    orgIdx: index('org_member_org_idx').on(table.organizationId),
+  }),
+);
+
+export const organizationInvitation = pgTable(
+  'organization_invitation',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => generateId()),
+    organizationId: text('organization_id')
+      .notNull()
+      .references(() => organization.id, { onDelete: 'cascade' }),
+    email: text('email').notNull(),
+    role: text('role').$type<OrganizationRole>().notNull().default('member'),
+    invitedBy: text('invited_by')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    token: text('token').notNull().unique(),
+    expiresAt: timestamp('expires_at').notNull(),
+    acceptedAt: timestamp('accepted_at'),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+  },
+  (table) => ({
+    tokenIdx: index('org_invitation_token_idx').on(table.token),
+    emailOrgIdx: index('org_invitation_email_org_idx').on(table.email, table.organizationId),
+  }),
+);
+
+export const userOrganizationSession = pgTable('user_organization_session', {
   userId: text('user_id')
-    .notNull()
+    .primaryKey()
     .references(() => user.id, { onDelete: 'cascade' }),
-  title: text('title').notNull(),
-  prompt: text('prompt').notNull(),
-  frequency: text('frequency').notNull(), // 'once', 'daily', 'weekly', 'monthly', 'yearly'
-  cronSchedule: text('cron_schedule').notNull(),
-  timezone: text('timezone').notNull().default('UTC'),
-  nextRunAt: timestamp('next_run_at').notNull(),
-  qstashScheduleId: text('qstash_schedule_id'),
-  status: text('status').notNull().default('active'), // 'active', 'paused', 'archived', 'running'
-  lastRunAt: timestamp('last_run_at'),
-  lastRunChatId: text('last_run_chat_id'),
-  // Store all run history as JSON
-  runHistory: json('run_history').$type<Array<{
-    runAt: string; // ISO date string
-    chatId: string;
-    status: 'success' | 'error' | 'timeout';
-    error?: string;
-    duration?: number; // milliseconds
-    tokensUsed?: number;
-    searchesPerformed?: number;
-  }>>().default([]),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
+  activeOrganizationId: text('active_organization_id').references(() => organization.id, { onDelete: 'set null' }),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
 
@@ -308,3 +443,12 @@ export type Payment = InferSelectModel<typeof payment>;
 export type ExtremeSearchUsage = InferSelectModel<typeof extremeSearchUsage>;
 export type MessageUsage = InferSelectModel<typeof messageUsage>;
 export type CustomInstructions = InferSelectModel<typeof customInstructions>;
+export type FileLibrary = InferSelectModel<typeof fileLibrary>;
+export type FileFolder = InferSelectModel<typeof fileFolder>;
+export type FileUsage = InferSelectModel<typeof fileUsage>;
+export type FileShare = InferSelectModel<typeof fileShare>;
+export type Tasks = InferSelectModel<typeof tasks>;
+export type Organization = InferSelectModel<typeof organization>;
+export type OrganizationMember = InferSelectModel<typeof organizationMember>;
+export type OrganizationInvitation = InferSelectModel<typeof organizationInvitation>;
+export type UserOrganizationSession = InferSelectModel<typeof userOrganizationSession>;

@@ -74,9 +74,7 @@ export function TaskCard({
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="flex-1">
-            <CardTitle className="text-base font-medium hover:text-primary transition-colors">
-              {task.title}
-            </CardTitle>
+            <CardTitle className="text-base font-medium hover:text-primary transition-colors">{task.title}</CardTitle>
             <CardDescription className="text-sm">
               <StatusBadge status={task.status} />
             </CardDescription>
@@ -101,17 +99,13 @@ export function TaskCard({
         <div className="space-y-1">
           {/* Next run information */}
           {task.nextRunAt && task.status === 'active' && (
-            <p className="text-xs text-muted-foreground">
-              Next Run: {formatNextRun(task.nextRunAt, task.timezone)}
-            </p>
+            <p className="text-xs text-muted-foreground">Next Run: {formatNextRun(task.nextRunAt, task.timezone)}</p>
           )}
 
           {/* Last run information */}
           {task.lastRunAt && (
             <div className="flex items-center gap-2">
-              <p className="text-xs text-muted-foreground">
-                Last Run: {formatNextRun(task.lastRunAt, task.timezone)}
-              </p>
+              <p className="text-xs text-muted-foreground">Last Run: {formatNextRun(task.lastRunAt, task.timezone)}</p>
               {task.lastRunChatId && (
                 <Link
                   href={`/${task.lastRunChatId}`}

@@ -36,7 +36,6 @@ import Link from 'next/link';
 import { User } from '@/lib/db/schema';
 import { SettingsDialog } from './settings-dialog';
 
-
 const UserProfile = memo(
   ({
     className,
@@ -281,7 +280,7 @@ const UserProfile = memo(
                 <span>Privacy</span>
               </Link>
             </DropdownMenuItem>
-            
+
             <DropdownMenuItem className="cursor-pointer" asChild>
               <a
                 href={'https://api.atlas.ai/'}

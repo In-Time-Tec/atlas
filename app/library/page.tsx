@@ -25,13 +25,7 @@ export default function LibraryPage() {
       <SidebarProvider>
         <AppSidebar />
         <SidebarInset className="flex flex-col h-full">
-          <PageHeader
-            title="Library"
-            user={null}
-            subscriptionData={null}
-            isProUser={false}
-            isProStatusLoading={true}
-          />
+          <PageHeader title="Library" user={null} subscriptionData={null} isProUser={false} isProStatusLoading={true} />
           <div className="flex-1 overflow-y-auto">
             <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
               <LoadingSkeleton />

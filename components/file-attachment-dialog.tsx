@@ -1,13 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -34,12 +28,7 @@ import {
 import { useFiles } from '@/hooks/use-files';
 import { formatBytes } from '@/lib/utils';
 import { FileIcon } from '@/app/library/file-icon';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface FileData {
   id: string;
@@ -67,7 +56,7 @@ export function FileAttachmentDialog({
 }: FileAttachmentDialogProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({});
-  
+
   React.useEffect(() => {
     if (!open) {
       setRowSelection({});
@@ -87,18 +76,14 @@ export function FileAttachmentDialog({
   const files = useMemo(() => {
     const allFiles = data?.files || [];
     if (!searchQuery) return allFiles;
-    
+
     const searchTerm = searchQuery.toLowerCase();
     return allFiles.filter((file) => {
-      const searchableText = [
-        file.filename,
-        file.originalName,
-        file.contentType,
-      ]
+      const searchableText = [file.filename, file.originalName, file.contentType]
         .filter(Boolean)
         .join(' ')
         .toLowerCase();
-      
+
       return searchableText.includes(searchTerm);
     });
   }, [data?.files, searchQuery]);
@@ -109,16 +94,16 @@ export function FileAttachmentDialog({
         id: 'select',
         header: ({ table }) => {
           const allRows = table.getRowModel().rows;
-          const selectableRows = allRows.filter(row => !selectedFiles.some(f => f.id === row.original.id));
-          const allSelectableSelected = selectableRows.length > 0 && selectableRows.every(row => row.getIsSelected());
-          const someSelectableSelected = selectableRows.some(row => row.getIsSelected());
-          
+          const selectableRows = allRows.filter((row) => !selectedFiles.some((f) => f.id === row.original.id));
+          const allSelectableSelected = selectableRows.length > 0 && selectableRows.every((row) => row.getIsSelected());
+          const someSelectableSelected = selectableRows.some((row) => row.getIsSelected());
+
           return (
             <Checkbox
               checked={allSelectableSelected || (someSelectableSelected && 'indeterminate')}
               onCheckedChange={(value) => {
-                allRows.forEach(row => {
-                  const isAlreadyAttached = selectedFiles.some(f => f.id === row.original.id);
+                allRows.forEach((row) => {
+                  const isAlreadyAttached = selectedFiles.some((f) => f.id === row.original.id);
                   if (!isAlreadyAttached) {
                     row.toggleSelected(!!value);
                   }
@@ -130,7 +115,7 @@ export function FileAttachmentDialog({
           );
         },
         cell: ({ row }) => {
-          const isAlreadyAttached = selectedFiles.some(f => f.id === row.original.id);
+          const isAlreadyAttached = selectedFiles.some((f) => f.id === row.original.id);
           return (
             <Checkbox
               checked={row.getIsSelected()}
@@ -150,12 +135,9 @@ export function FileAttachmentDialog({
           const sorted = column.getIsSorted();
           const sortIndex = column.getSortIndex();
           const handleClick = (e: React.MouseEvent) => {
-            column.toggleSorting(
-              column.getIsSorted() === 'asc',
-              e.shiftKey
-            );
+            column.toggleSorting(column.getIsSorted() === 'asc', e.shiftKey);
           };
-          
+
           const getSortIcon = () => {
             if (sorted === 'asc') {
               return (
@@ -174,17 +156,12 @@ export function FileAttachmentDialog({
             }
             return <HugeiconsIcon icon={ArrowUpDownIcon} size={14} className="ml-2" />;
           };
-          
+
           return (
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleClick}
-                    className="h-8 px-1 lg:px-2 text-xs"
-                  >
+                  <Button variant="ghost" size="sm" onClick={handleClick} className="h-8 px-1 lg:px-2 text-xs">
                     Name
                     {getSortIcon()}
                   </Button>
@@ -199,7 +176,7 @@ export function FileAttachmentDialog({
         },
         cell: ({ row }) => {
           const file = row.original;
-          const isAlreadyAttached = selectedFiles.some(f => f.id === file.id);
+          const isAlreadyAttached = selectedFiles.some((f) => f.id === file.id);
           return (
             <div className="flex items-center space-x-2">
               <FileIcon contentType={file.contentType || 'application/octet-stream'} />
@@ -207,9 +184,7 @@ export function FileAttachmentDialog({
                 <div className="flex items-center gap-2">
                   <p className="text-sm font-medium truncate">{file.filename}</p>
                   {isAlreadyAttached && (
-                    <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded">
-                      Attached
-                    </span>
+                    <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded">Attached</span>
                   )}
                 </div>
               </div>
@@ -239,12 +214,9 @@ export function FileAttachmentDialog({
           const sorted = column.getIsSorted();
           const sortIndex = column.getSortIndex();
           const handleClick = (e: React.MouseEvent) => {
-            column.toggleSorting(
-              column.getIsSorted() === 'asc',
-              e.shiftKey
-            );
+            column.toggleSorting(column.getIsSorted() === 'asc', e.shiftKey);
           };
-          
+
           const getSortIcon = () => {
             if (sorted === 'asc') {
               return (
@@ -263,17 +235,12 @@ export function FileAttachmentDialog({
             }
             return <HugeiconsIcon icon={ArrowUpDownIcon} size={14} className="ml-2" />;
           };
-          
+
           return (
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleClick}
-                    className="h-8 px-1 lg:px-2 text-xs"
-                  >
+                  <Button variant="ghost" size="sm" onClick={handleClick} className="h-8 px-1 lg:px-2 text-xs">
                     Size
                     {getSortIcon()}
                   </Button>
@@ -293,7 +260,7 @@ export function FileAttachmentDialog({
         size: 100,
       },
     ],
-    [selectedFiles]
+    [selectedFiles],
   );
 
   const table = useReactTable({
@@ -319,7 +286,7 @@ export function FileAttachmentDialog({
 
   const handleAttach = () => {
     const selectedRows = table.getFilteredSelectedRowModel().rows;
-    const selectedFileData = selectedRows.map(row => row.original);
+    const selectedFileData = selectedRows.map((row) => row.original);
     onFilesSelect(selectedFileData);
     onOpenChange(false);
   };
@@ -332,7 +299,7 @@ export function FileAttachmentDialog({
         <DialogHeader>
           <DialogTitle>Attach Files</DialogTitle>
         </DialogHeader>
-        
+
         <div className="flex-1 flex flex-col space-y-4 overflow-hidden">
           <div className="relative">
             <HugeiconsIcon
@@ -353,15 +320,20 @@ export function FileAttachmentDialog({
               <table className="w-full caption-bottom text-sm">
                 <thead className="[&_tr]:border-b sticky top-0 z-10 bg-background">
                   {table.getHeaderGroups().map((headerGroup) => (
-                    <tr key={headerGroup.id} className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
+                    <tr
+                      key={headerGroup.id}
+                      className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted"
+                    >
                       {headerGroup.headers.map((header) => {
                         return (
-                          <th 
-                            key={header.id} 
-                            style={{ width: header.getSize() }} 
+                          <th
+                            key={header.id}
+                            style={{ width: header.getSize() }}
                             className="h-10 px-3 text-left align-middle font-medium text-muted-foreground text-sm [&:has([role=checkbox])]:pr-0 bg-background"
                           >
-                            {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                            {header.isPlaceholder
+                              ? null
+                              : flexRender(header.column.columnDef.header, header.getContext())}
                           </th>
                         );
                       })}
@@ -377,7 +349,11 @@ export function FileAttachmentDialog({
                     </tr>
                   ) : table.getRowModel().rows?.length ? (
                     table.getRowModel().rows.map((row) => (
-                      <tr key={row.id} data-state={row.getIsSelected() && 'selected'} className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
+                      <tr
+                        key={row.id}
+                        data-state={row.getIsSelected() && 'selected'}
+                        className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted"
+                      >
                         {row.getVisibleCells().map((cell) => (
                           <td key={cell.id} className="py-2.5 px-3 align-middle text-sm [&:has([role=checkbox])]:pr-0">
                             {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -399,11 +375,7 @@ export function FileAttachmentDialog({
 
           <div className="flex items-center justify-between space-x-2">
             <div className="flex-1 text-sm text-muted-foreground">
-              {selectedCount > 0 && (
-                <span>
-                  {selectedCount} file(s) selected
-                </span>
-              )}
+              {selectedCount > 0 && <span>{selectedCount} file(s) selected</span>}
             </div>
             <div className="flex items-center space-x-6 lg:space-x-8">
               <div className="flex items-center space-x-2">
@@ -413,7 +385,7 @@ export function FileAttachmentDialog({
                   value={pagination.pageSize}
                   onChange={(e) => {
                     const newSize = Number(e.target.value);
-                    setPagination(prev => ({ ...prev, pageSize: newSize, pageIndex: 0 }));
+                    setPagination((prev) => ({ ...prev, pageSize: newSize, pageIndex: 0 }));
                   }}
                 >
                   {[10, 20, 30, 40, 50].map((pageSize) => (

@@ -38,8 +38,7 @@ export function ProUpgradeScreen({ user, isProUser, isProStatusLoading }: ProUpg
               </div>
               <CardTitle className="text-xl">Pro Feature</CardTitle>
               <CardDescription>
-                Tasks are available for Pro users only. Schedule automated searches and get notified when they
-                complete.
+                Tasks are available for Pro users only. Schedule automated searches and get notified when they complete.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">

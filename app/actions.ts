@@ -101,11 +101,11 @@ export async function suggestQuestions(history: any[]) {
 
 export async function checkImageModeration(images: any) {
   const LLAMA_GUARD_DOES_NOT_SUPPORT_IMAGES = true;
-  
+
   if (LLAMA_GUARD_DOES_NOT_SUPPORT_IMAGES) {
     return 'safe';
   }
-  
+
   const { text } = await generateText({
     model: groq('meta-llama/llama-guard-4-12b'),
     messages: [
@@ -1485,9 +1485,7 @@ export async function createScheduledTask({
     }
 
     if (frequency === 'daily') {
-      const activeDailyTasks = existingTasks.filter(
-        (task) => task.frequency === 'daily' && task.status === 'active',
-      );
+      const activeDailyTasks = existingTasks.filter((task) => task.frequency === 'daily' && task.status === 'active');
       if (activeDailyTasks.length >= 5) {
         throw new Error('You have reached the maximum limit of 5 active daily tasks');
       }
@@ -1558,7 +1556,6 @@ export async function createScheduledTask({
               minimumDelay,
               'seconds',
             );
-
           } else {
             throw new Error('Cannot schedule for a time in the past');
           }

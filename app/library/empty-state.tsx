@@ -12,11 +12,7 @@ export function EmptyState({ onUploadClick }: EmptyStateProps) {
   return (
     <div className="flex flex-col items-center justify-center py-12 px-4">
       <div className="w-24 h-24 mb-6 rounded-full bg-muted/30 flex items-center justify-center">
-        <HugeiconsIcon
-          icon={FolderIcon}
-          size={48}
-          className="text-muted-foreground"
-        />
+        <HugeiconsIcon icon={FolderIcon} size={48} className="text-muted-foreground" />
       </div>
 
       <h3 className="text-lg font-semibold mb-2">No files yet</h3>

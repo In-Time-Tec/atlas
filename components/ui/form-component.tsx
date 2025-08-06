@@ -996,10 +996,7 @@ const FormComponent: React.FC<FormComponentProps> = ({
         return;
       }
 
-      if (
-        event.key.length > 1 &&
-        !['Backspace', 'Delete', 'Space'].includes(event.key)
-      ) {
+      if (event.key.length > 1 && !['Backspace', 'Delete', 'Space'].includes(event.key)) {
         return;
       }
 
@@ -1322,7 +1319,18 @@ const FormComponent: React.FC<FormComponentProps> = ({
   );
 
   const handleLibraryFileSelect = useCallback(
-    (files: Array<{ id: string; filename: string; originalName: string; contentType: string; size: number; url: string; createdAt: string; updatedAt: string }>) => {
+    (
+      files: Array<{
+        id: string;
+        filename: string;
+        originalName: string;
+        contentType: string;
+        size: number;
+        url: string;
+        createdAt: string;
+        updatedAt: string;
+      }>,
+    ) => {
       const libraryAttachments: Attachment[] = files.map((file) => ({
         name: file.originalName,
         contentType: file.contentType,
@@ -2088,22 +2096,22 @@ const FormComponent: React.FC<FormComponentProps> = ({
                                   : 'Upload an image'
                                 : 'Selected model does not support file uploads'}
                             </span>
-                        </div>
-                      </TooltipContent>
-                    </Tooltip>
-                    {hasVisionSupport(selectedModel) && (
-                      <DropdownMenuContent align="end" sideOffset={4}>
-                        <DropdownMenuItem onClick={triggerFileInput}>
-                          <Upload className="w-4 h-4 mr-2" />
-                          Upload Files
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={openLibraryDialog}>
-                          <FolderOpen className="w-4 h-4 mr-2" />
-                          Browse Library
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    )}
-                  </DropdownMenu>
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
+                      {hasVisionSupport(selectedModel) && (
+                        <DropdownMenuContent align="end" sideOffset={4}>
+                          <DropdownMenuItem onClick={triggerFileInput}>
+                            <Upload className="w-4 h-4 mr-2" />
+                            Upload Files
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={openLibraryDialog}>
+                            <FolderOpen className="w-4 h-4 mr-2" />
+                            Browse Library
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      )}
+                    </DropdownMenu>
                   ) : null}
 
                   {isProcessing ? (
@@ -2209,16 +2217,18 @@ const FormComponent: React.FC<FormComponentProps> = ({
         open={showLibraryDialog}
         onOpenChange={setShowLibraryDialog}
         onFilesSelect={handleLibraryFileSelect}
-        selectedFiles={attachments.filter(a => a.isFromLibrary).map(a => ({
-          id: a.libraryFileId || '',
-          filename: a.name,
-          originalName: a.name,
-          contentType: a.contentType,
-          size: a.size,
-          url: a.url,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        }))}
+        selectedFiles={attachments
+          .filter((a) => a.isFromLibrary)
+          .map((a) => ({
+            id: a.libraryFileId || '',
+            filename: a.name,
+            originalName: a.name,
+            contentType: a.contentType,
+            size: a.size,
+            url: a.url,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          }))}
       />
     </div>
   );

@@ -26,7 +26,7 @@ export function useOptimizedScroll(
       const scrollTop = container.scrollTop;
       const scrollHeight = container.scrollHeight;
       const clientHeight = container.clientHeight;
-      
+
       const atBottom = scrollHeight - (scrollTop + clientHeight) < threshold;
       return atBottom;
     },
@@ -44,7 +44,7 @@ export function useOptimizedScroll(
         const container = containerRef.current;
         const scrollTop = container.scrollTop;
         const atBottom = checkIfAtBottom(container);
-        
+
         setIsAtBottom(atBottom);
 
         // If user scrolled up manually, disable autoscroll
@@ -55,7 +55,7 @@ export function useOptimizedScroll(
         else if (atBottom) {
           setHasManuallyScrolled(false);
         }
-        
+
         lastScrollPositionRef.current = scrollTop;
       }
     }, debounceMs);

@@ -1,12 +1,13 @@
 import { put } from '@vercel/blob';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { and, asc, desc, eq, ilike, or, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, ilike, or, sql, isNull } from 'drizzle-orm';
 
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { fileLibrary, fileFolder } from '@/lib/db/schema';
 import { generateId } from 'ai';
+import { canUserAccessOrganizationFiles, canUserModifyOrganizationFiles } from '@/lib/organization-utils';
 
 const FileUploadSchema = z.object({
   file: z
@@ -18,7 +19,7 @@ const FileUploadSchema = z.object({
       (file) => {
         const validTypes = [
           'image/jpeg',
-          'image/png', 
+          'image/png',
           'image/gif',
           'image/webp',
           'application/pdf',
@@ -27,7 +28,7 @@ const FileUploadSchema = z.object({
           'application/msword',
           'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
           'application/vnd.ms-excel',
-          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         ];
         return validTypes.includes(file.type);
       },
@@ -48,6 +49,7 @@ const FileListQuerySchema = z.object({
   offset: z.coerce.number().min(0).default(0),
   sortBy: z.enum(['createdAt', 'filename', 'size']).default('createdAt'),
   sortOrder: z.enum(['asc', 'desc']).default('desc'),
+  organizationId: z.string().optional(),
 });
 
 export async function GET(request: NextRequest) {
@@ -62,18 +64,29 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const queryParams = Object.fromEntries(searchParams.entries());
-    
+
     const validatedParams = FileListQuerySchema.safeParse(queryParams);
     if (!validatedParams.success) {
       return NextResponse.json(
         { error: 'Invalid query parameters', details: validatedParams.error.errors },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
-    const { folderId, search, tags, limit, offset, sortBy, sortOrder } = validatedParams.data;
+    const { folderId, search, tags, limit, offset, sortBy, sortOrder, organizationId } = validatedParams.data;
 
-    let whereConditions = [eq(fileLibrary.userId, session.user.id)];
+    let whereConditions = [];
+
+    if (organizationId) {
+      const hasAccess = await canUserAccessOrganizationFiles(session.user.id, organizationId);
+      if (!hasAccess) {
+        return NextResponse.json({ error: 'Access denied to organization files' }, { status: 403 });
+      }
+      whereConditions.push(eq(fileLibrary.organizationId, organizationId));
+    } else {
+      whereConditions.push(eq(fileLibrary.userId, session.user.id));
+      whereConditions.push(isNull(fileLibrary.organizationId));
+    }
 
     if (folderId) {
       whereConditions.push(eq(fileLibrary.folderId, folderId));
@@ -84,22 +97,19 @@ export async function GET(request: NextRequest) {
         or(
           ilike(fileLibrary.filename, `%${search}%`),
           ilike(fileLibrary.originalName, `%${search}%`),
-          ilike(fileLibrary.description, `%${search}%`)
-        )!
+          ilike(fileLibrary.description, `%${search}%`),
+        )!,
       );
     }
 
     if (tags) {
-      const tagArray = tags.split(',').map(tag => tag.trim());
-      whereConditions.push(
-        sql`${fileLibrary.tags} @> ${JSON.stringify(tagArray)}::jsonb`
-      );
+      const tagArray = tags.split(',').map((tag) => tag.trim());
+      whereConditions.push(sql`${fileLibrary.tags} @> ${JSON.stringify(tagArray)}::jsonb`);
     }
 
-    const orderByColumn = sortBy === 'filename' ? fileLibrary.filename : 
-                         sortBy === 'size' ? fileLibrary.size : 
-                         fileLibrary.createdAt;
-    
+    const orderByColumn =
+      sortBy === 'filename' ? fileLibrary.filename : sortBy === 'size' ? fileLibrary.size : fileLibrary.createdAt;
+
     const orderDirection = sortOrder === 'asc' ? asc : desc;
 
     const files = await db
@@ -138,7 +148,7 @@ export async function GET(request: NextRequest) {
         total: totalCount[0]?.count || 0,
         limit,
         offset,
-        hasMore: (offset + limit) < (totalCount[0]?.count || 0),
+        hasMore: offset + limit < (totalCount[0]?.count || 0),
       },
     });
   } catch (error) {
@@ -167,7 +177,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
     }
 
-    const tags = tagsStr ? tagsStr.split(',').map(tag => tag.trim()).filter(Boolean) : [];
+    const tags = tagsStr
+      ? tagsStr
+          .split(',')
+          .map((tag) => tag.trim())
+          .filter(Boolean)
+      : [];
 
     const validatedData = FileUploadSchema.safeParse({
       file,
@@ -181,11 +196,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: errorMessage }, { status: 400 });
     }
 
+    const organizationId = formData.get('organizationId') as string | null;
+
+    if (organizationId) {
+      const canModify = await canUserModifyOrganizationFiles(session.user.id, organizationId);
+      if (!canModify) {
+        return NextResponse.json({ error: 'Access denied to modify organization files' }, { status: 403 });
+      }
+    }
+
     if (folderId) {
+      const folderConditions = organizationId
+        ? [eq(fileFolder.id, folderId), eq(fileFolder.organizationId, organizationId)]
+        : [eq(fileFolder.id, folderId), eq(fileFolder.userId, session.user.id)];
+
       const folder = await db
         .select()
         .from(fileFolder)
-        .where(and(eq(fileFolder.id, folderId), eq(fileFolder.userId, session.user.id)))
+        .where(and(...folderConditions))
         .limit(1);
 
       if (!folder.length) {
@@ -194,7 +222,7 @@ export async function POST(request: NextRequest) {
     }
 
     const fileId = generateId();
-    
+
     const blob = await put(`files/${session.user.id}/${file.name}`, file, {
       access: 'public',
       addRandomSuffix: true,
@@ -203,6 +231,7 @@ export async function POST(request: NextRequest) {
     const fileRecord = {
       id: fileId,
       userId: session.user.id,
+      organizationId: organizationId || null,
       filename: file.name,
       originalName: file.name,
       contentType: file.type,

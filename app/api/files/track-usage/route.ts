@@ -26,10 +26,7 @@ export async function POST(request: NextRequest) {
     const validatedData = TrackUsageSchema.safeParse(body);
 
     if (!validatedData.success) {
-      return NextResponse.json(
-        { error: 'Invalid request data', details: validatedData.error.errors },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Invalid request data', details: validatedData.error.errors }, { status: 400 });
     }
 
     const { fileId, usage, metadata } = validatedData.data;

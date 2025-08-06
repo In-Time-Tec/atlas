@@ -25,9 +25,7 @@ const Home = () => {
         <SidebarInset className="flex flex-col h-full">
           <PageHeader
             title=""
-            rightContent={
-              <ChatHistoryButton onClickAction={() => setCommandDialogOpen(true)} />
-            }
+            rightContent={<ChatHistoryButton onClickAction={() => setCommandDialogOpen(true)} />}
             user={user}
             subscriptionData={subscriptionData}
             isProUser={isProUser}

@@ -404,7 +404,6 @@ const Messages: React.FC<MessagesProps> = React.memo(
       ],
     );
 
-
     useEffect(() => {
       const activeReasoning = messages.flatMap((message, messageIndex) =>
         (message.parts || [])
@@ -547,7 +546,6 @@ const Messages: React.FC<MessagesProps> = React.memo(
             handleRetry={handleRetry}
           />
         )}
-
       </div>
     );
   },

@@ -109,7 +109,6 @@ export async function POST(req: Request) {
     const chatId = uuidv4();
     const streamId = 'stream-' + uuidv4();
 
-
     // Create the chat
     await saveChat({
       id: chatId,
@@ -301,9 +300,10 @@ export async function POST(req: Request) {
                 runDuration = Date.now() - requestStartTime;
 
                 // Count searches performed (look for extreme_search tool calls)
-                const searchesPerformed = event.steps?.reduce((total, step) => {
-                  return total + (step.toolCalls?.filter(call => call.toolName === 'extreme_search').length || 0);
-                }, 0) || 0;
+                const searchesPerformed =
+                  event.steps?.reduce((total, step) => {
+                    return total + (step.toolCalls?.filter((call) => call.toolName === 'extreme_search').length || 0);
+                  }, 0) || 0;
 
                 // Update task with last run info including metrics
                 await updateTaskLastRun({
@@ -352,13 +352,11 @@ export async function POST(req: Request) {
                   try {
                     // Extract assistant response - use event.text which contains the full response
                     let assistantResponseText = event.text || '';
-                    
+
                     // If event.text is empty, try extracting from messages
                     if (!assistantResponseText.trim()) {
-                      const assistantMessages = event.response.messages.filter(
-                        (msg: any) => msg.role === 'assistant'
-                      );
-                      
+                      const assistantMessages = event.response.messages.filter((msg: any) => msg.role === 'assistant');
+
                       for (const msg of assistantMessages) {
                         if (typeof msg.content === 'string') {
                           assistantResponseText += msg.content + '\n';
@@ -376,9 +374,8 @@ export async function POST(req: Request) {
                     console.log('📧 First 200 chars:', assistantResponseText.substring(0, 200));
 
                     const trimmedResponse = assistantResponseText.trim() || 'No response available.';
-                    const finalResponse = trimmedResponse.length > 2000 
-                      ? trimmedResponse.substring(0, 2000) + '...' 
-                      : trimmedResponse;
+                    const finalResponse =
+                      trimmedResponse.length > 2000 ? trimmedResponse.substring(0, 2000) + '...' : trimmedResponse;
 
                     await sendTaskCompletionEmail({
                       to: userResult.email,
@@ -412,11 +409,11 @@ export async function POST(req: Request) {
           },
           onError: async (event) => {
             console.log('Error: ', event.error);
-            
+
             // Calculate run duration and capture error
             runDuration = Date.now() - requestStartTime;
-            runError = event.error as string || 'Unknown error occurred';
-            
+            runError = (event.error as string) || 'Unknown error occurred';
+
             // Update task with failed run info
             try {
               await updateTaskLastRun({
@@ -430,7 +427,7 @@ export async function POST(req: Request) {
             } catch (updateError) {
               console.error('Failed to update task with error info:', updateError);
             }
-            
+
             // Set task status back to active on error
             try {
               await updateTaskStatus({
@@ -441,7 +438,7 @@ export async function POST(req: Request) {
             } catch (statusError) {
               console.error('Failed to reset task status after error:', statusError);
             }
-            
+
             const requestEndTime = Date.now();
             const processingTime = (requestEndTime - requestStartTime) / 1000;
             console.log('--------------------------------');

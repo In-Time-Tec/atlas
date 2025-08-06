@@ -56,7 +56,6 @@ export default function PricingTable({ subscriptionDetails, user }: PricingTable
       try {
         const config = await getDiscountConfigAction();
 
-        // Add original price if not already present (let edge config handle discount details)
         const isDevMode = config.dev || process.env.NODE_ENV === 'development';
 
         if ((config.enabled || isDevMode) && !config.originalPrice) {
@@ -64,11 +63,9 @@ export default function PricingTable({ subscriptionDetails, user }: PricingTable
         }
         setDiscountConfig(config);
 
-        // Set initial countdown based on startsAt or expiresAt
         if (config.startsAt || config.expiresAt) {
           updateCountdown(config.startsAt, config.expiresAt);
         } else {
-          // Default 24-hour countdown if no timing set
           const endTime = new Date();
           endTime.setHours(endTime.getHours() + 24);
           updateCountdown(undefined, endTime);
@@ -82,7 +79,6 @@ export default function PricingTable({ subscriptionDetails, user }: PricingTable
       const calculateTimeLeft = () => {
         const now = new Date().getTime();
 
-        // Check if discount hasn't started yet
         if (startsAt && now < startsAt.getTime()) {
           const difference = startsAt.getTime() - now;
           const days = Math.floor(difference / (1000 * 60 * 60 * 24));
@@ -93,7 +89,6 @@ export default function PricingTable({ subscriptionDetails, user }: PricingTable
           return;
         }
 
-        // Check if discount is active and count down to expiration
         if (expiresAt) {
           const difference = expiresAt.getTime() - now;
           if (difference > 0) {
@@ -114,7 +109,6 @@ export default function PricingTable({ subscriptionDetails, user }: PricingTable
     fetchDiscountConfig();
   }, []);
 
-  // Helper function to calculate discounted price
   const getDiscountedPrice = (originalPrice: number, isINR: boolean = false) => {
     const isDevMode = discountConfig.dev || process.env.NODE_ENV === 'development';
     const shouldApplyDiscount = isDevMode
@@ -125,12 +119,10 @@ export default function PricingTable({ subscriptionDetails, user }: PricingTable
       return originalPrice;
     }
 
-    // Use INR price directly if available
     if (isINR && discountConfig.inrPrice) {
       return discountConfig.inrPrice;
     }
 
-    // Apply percentage discount
     if (discountConfig.percentage) {
       return Math.round(originalPrice - (originalPrice * discountConfig.percentage) / 100);
     }
@@ -138,7 +130,6 @@ export default function PricingTable({ subscriptionDetails, user }: PricingTable
     return originalPrice;
   };
 
-  // Check if discount should be shown
   const shouldShowDiscount = () => {
     const isDevMode = discountConfig.dev || process.env.NODE_ENV === 'development';
     return isDevMode
@@ -201,7 +192,6 @@ export default function PricingTable({ subscriptionDetails, user }: PricingTable
 
   const hasProAccess = () => {
     const hasPolarSub = isCurrentPlan(STARTER_TIER);
-    // Check DodoPayments Pro status
     const hasDodoProAccess = user?.isProUser && user?.proSource === 'dodo';
 
     return hasPolarSub || hasDodoProAccess;
@@ -495,14 +485,14 @@ export default function PricingTable({ subscriptionDetails, user }: PricingTable
                     >
                       {getProAccessSource() === 'dodo' ? 'Manage payment' : 'Manage subscription'}
                     </Button>
-                      {subscriptionDetails.subscription && getProAccessSource() === 'polar' && (
+                    {subscriptionDetails.subscription && getProAccessSource() === 'polar' && (
                       <p className="text-sm text-zinc-600 dark:text-zinc-400 text-center leading-relaxed">
                         {subscriptionDetails.subscription.cancelAtPeriodEnd
                           ? `Expires ${formatDate(subscriptionDetails.subscription.currentPeriodEnd)}`
                           : `Renews ${formatDate(subscriptionDetails.subscription.currentPeriodEnd)}`}
                       </p>
                     )}
-                      {getProAccessSource() === 'dodo' && user?.expiresAt && (
+                    {getProAccessSource() === 'dodo' && user?.expiresAt && (
                       <p className="text-sm text-zinc-600 dark:text-zinc-400 text-center leading-relaxed">
                         Pro access expires {formatDate(new Date(user.expiresAt))}
                       </p>
@@ -564,6 +554,109 @@ export default function PricingTable({ subscriptionDetails, user }: PricingTable
                   )}
                 </Button>
               )}
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-20">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-medium tracking-tight text-zinc-900 dark:text-zinc-100 mb-4">
+              Team & Organization Plans
+            </h2>
+            <p className="text-zinc-600 dark:text-zinc-400 text-lg">
+              Scale Atlas across your entire organization with seat-based pricing
+            </p>
+          </div>
+
+          <div className="grid lg:grid-cols-2 gap-8 max-w-5xl mx-auto">
+            <div className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800/80 rounded-xl p-10">
+              <div className="mb-8">
+                <h3 className="text-lg font-medium text-zinc-900 dark:text-zinc-100 mb-3">Team</h3>
+                <p className="text-zinc-500 dark:text-zinc-400 text-sm mb-6">Perfect for small to medium teams</p>
+                <div className="flex items-baseline mb-2">
+                  <span className="text-4xl font-light text-zinc-900 dark:text-zinc-100">
+                    ${PRICING.TEAM_PER_SEAT_MONTHLY}
+                  </span>
+                  <span className="text-zinc-400 dark:text-zinc-500 ml-2 text-sm">/seat/month</span>
+                </div>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400">Minimum {PRICING.MIN_TEAM_SEATS} seats</p>
+              </div>
+
+              <ul className="space-y-4 mb-10">
+                <li className="flex items-center text-[15px]">
+                  <div className="w-1 h-1 bg-zinc-600 dark:bg-zinc-400 rounded-full mr-4"></div>
+                  <span className="text-zinc-700 dark:text-zinc-300">All Pro features for every member</span>
+                </li>
+                <li className="flex items-center text-[15px]">
+                  <div className="w-1 h-1 bg-zinc-600 dark:bg-zinc-400 rounded-full mr-4"></div>
+                  <span className="text-zinc-700 dark:text-zinc-300">Centralized billing</span>
+                </li>
+                <li className="flex items-center text-[15px]">
+                  <div className="w-1 h-1 bg-zinc-600 dark:bg-zinc-400 rounded-full mr-4"></div>
+                  <span className="text-zinc-700 dark:text-zinc-300">Team collaboration features</span>
+                </li>
+                <li className="flex items-center text-[15px]">
+                  <div className="w-1 h-1 bg-zinc-600 dark:bg-zinc-400 rounded-full mr-4"></div>
+                  <span className="text-zinc-700 dark:text-zinc-300">Priority support</span>
+                </li>
+              </ul>
+
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => (window.location.href = 'mailto:zaid@atlas.ai?subject=Team%20Plan%20Inquiry')}
+              >
+                Contact Sales
+              </Button>
+            </div>
+
+            <div className="bg-white dark:bg-zinc-900 border-2 border-primary/50 rounded-xl p-10 relative">
+              <Badge className="absolute -top-3 right-8 bg-primary text-primary-foreground">Best for Scale</Badge>
+
+              <div className="mb-8">
+                <h3 className="text-lg font-medium text-zinc-900 dark:text-zinc-100 mb-3">Enterprise</h3>
+                <p className="text-zinc-500 dark:text-zinc-400 text-sm mb-6">
+                  For large organizations with advanced needs
+                </p>
+                <div className="flex items-baseline mb-2">
+                  <span className="text-4xl font-light text-zinc-900 dark:text-zinc-100">
+                    ${PRICING.ENTERPRISE_PER_SEAT_MONTHLY}
+                  </span>
+                  <span className="text-zinc-400 dark:text-zinc-500 ml-2 text-sm">/seat/month</span>
+                </div>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400">Minimum {PRICING.MIN_ENTERPRISE_SEATS} seats</p>
+              </div>
+
+              <ul className="space-y-4 mb-10">
+                <li className="flex items-center text-[15px]">
+                  <div className="w-1 h-1 bg-primary rounded-full mr-4"></div>
+                  <span className="text-zinc-700 dark:text-zinc-300">Everything in Team plan</span>
+                </li>
+                <li className="flex items-center text-[15px]">
+                  <div className="w-1 h-1 bg-primary rounded-full mr-4"></div>
+                  <span className="text-zinc-700 dark:text-zinc-300">Advanced analytics & reporting</span>
+                </li>
+                <li className="flex items-center text-[15px]">
+                  <div className="w-1 h-1 bg-primary rounded-full mr-4"></div>
+                  <span className="text-zinc-700 dark:text-zinc-300">Custom integrations</span>
+                </li>
+                <li className="flex items-center text-[15px]">
+                  <div className="w-1 h-1 bg-primary rounded-full mr-4"></div>
+                  <span className="text-zinc-700 dark:text-zinc-300">Dedicated account manager</span>
+                </li>
+                <li className="flex items-center text-[15px]">
+                  <div className="w-1 h-1 bg-primary rounded-full mr-4"></div>
+                  <span className="text-zinc-700 dark:text-zinc-300">SLA guarantees</span>
+                </li>
+              </ul>
+
+              <Button
+                className="w-full"
+                onClick={() => (window.location.href = 'mailto:zaid@atlas.ai?subject=Enterprise%20Plan%20Inquiry')}
+              >
+                Contact Sales
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
             </div>
           </div>
         </div>

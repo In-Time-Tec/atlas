@@ -47,21 +47,18 @@ export function LibraryContent() {
     limit: 1000,
     offset: 0,
   });
-  
+
   const uploadMutation = useUploadFile();
 
-  const columns = React.useMemo(() => 
-    createColumns({ editingFileId, setEditingFileId }), 
-    [editingFileId]
-  );
+  const columns = React.useMemo(() => createColumns({ editingFileId, setEditingFileId }), [editingFileId]);
 
   const allFiles = React.useMemo(() => data?.files || [], [data?.files]);
-  
+
   const files = React.useMemo(() => {
     if (!debouncedFilter) return allFiles;
-    
+
     const searchTerm = debouncedFilter.toLowerCase();
-    
+
     return allFiles.filter((file) => {
       const searchableText = [
         file.filename,
@@ -69,12 +66,12 @@ export function LibraryContent() {
         file.contentType,
         file.description,
         file.folderName,
-        ...(file.tags || [])
+        ...(file.tags || []),
       ]
         .filter(Boolean)
         .join(' ')
         .toLowerCase();
-      
+
       return searchableText.includes(searchTerm);
     });
   }, [allFiles, debouncedFilter]);
@@ -93,13 +90,16 @@ export function LibraryContent() {
     }
   }, [columnVisibility]);
 
-  const handleFileSelect = React.useCallback((files: FileList | null) => {
-    if (!files || files.length === 0) return;
-    
-    Array.from(files).forEach(file => {
-      uploadMutation.mutate({ file });
-    });
-  }, [uploadMutation]);
+  const handleFileSelect = React.useCallback(
+    (files: FileList | null) => {
+      if (!files || files.length === 0) return;
+
+      Array.from(files).forEach((file) => {
+        uploadMutation.mutate({ file });
+      });
+    },
+    [uploadMutation],
+  );
 
   const handleUploadClick = React.useCallback(() => {
     fileInputRef.current?.click();
@@ -151,26 +151,25 @@ export function LibraryContent() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              {['filename', 'type', 'size', 'uploaded', 'modified']
-                .map((columnId) => {
-                  const isVisible = columnVisibility[columnId] !== false;
-                  const columnName = getColumnDisplayName(columnId);
-                  return (
-                    <DropdownMenuCheckboxItem
-                      key={columnId}
-                      className="capitalize"
-                      checked={isVisible}
-                      onCheckedChange={(value) =>
-                        setColumnVisibility((prev: VisibilityState) => ({
-                          ...prev,
-                          [columnId]: !!value,
-                        }))
-                      }
-                    >
-                      {columnName}
-                    </DropdownMenuCheckboxItem>
-                  );
-                })}
+              {['filename', 'type', 'size', 'uploaded', 'modified'].map((columnId) => {
+                const isVisible = columnVisibility[columnId] !== false;
+                const columnName = getColumnDisplayName(columnId);
+                return (
+                  <DropdownMenuCheckboxItem
+                    key={columnId}
+                    className="capitalize"
+                    checked={isVisible}
+                    onCheckedChange={(value) =>
+                      setColumnVisibility((prev: VisibilityState) => ({
+                        ...prev,
+                        [columnId]: !!value,
+                      }))
+                    }
+                  >
+                    {columnName}
+                  </DropdownMenuCheckboxItem>
+                );
+              })}
             </DropdownMenuContent>
           </DropdownMenu>
 
@@ -184,11 +183,9 @@ export function LibraryContent() {
                 )}
               </Button>
             </TooltipTrigger>
-            <TooltipContent>
-              Upload Files
-            </TooltipContent>
+            <TooltipContent>Upload Files</TooltipContent>
           </Tooltip>
-          
+
           <input
             ref={fileInputRef}
             type="file"
@@ -206,9 +203,8 @@ export function LibraryContent() {
         hideViewButton={true}
         columnVisibility={columnVisibility}
         onColumnVisibilityChange={(updaterOrValue) => {
-          const newVisibility = typeof updaterOrValue === 'function' 
-            ? updaterOrValue(columnVisibility) 
-            : updaterOrValue;
+          const newVisibility =
+            typeof updaterOrValue === 'function' ? updaterOrValue(columnVisibility) : updaterOrValue;
           setColumnVisibility(newVisibility);
         }}
       />

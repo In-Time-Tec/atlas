@@ -168,7 +168,9 @@ const Navbar = memo(
                   className="rounded-lg hover:bg-accent/50 group transition-all hover:scale-105 pointer-events-auto"
                 >
                   <FolderOpen size={16} className="group-hover:scale-110 transition-all" />
-                  <span className="text-sm ml-1.5 group-hover:block hidden animate-in fade-in duration-300">Library</span>
+                  <span className="text-sm ml-1.5 group-hover:block hidden animate-in fade-in duration-300">
+                    Library
+                  </span>
                 </Button>
               </Link>
             )}

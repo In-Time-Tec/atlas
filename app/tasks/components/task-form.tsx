@@ -243,13 +243,7 @@ export function TaskForm({
                   max={TASK_LIMITS.TOTAL_TASKS}
                   size={24}
                   strokeWidth={2}
-                  color={
-                    totalTasks >= TASK_LIMITS.TOTAL_TASKS
-                      ? 'danger'
-                      : totalTasks >= 8
-                        ? 'warning'
-                        : 'primary'
-                  }
+                  color={totalTasks >= TASK_LIMITS.TOTAL_TASKS ? 'danger' : totalTasks >= 8 ? 'warning' : 'primary'}
                   showLabel={false}
                 />
               )}

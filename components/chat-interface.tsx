@@ -80,11 +80,7 @@ const ChatInterface = memo(
 
     const [chatState, dispatch] = useReducer(
       chatReducer,
-      createInitialState(
-        initialVisibility,
-        persistedHasShownUpgradeDialog,
-        persistedHasShownSignInPrompt,
-      ),
+      createInitialState(initialVisibility, persistedHasShownUpgradeDialog, persistedHasShownSignInPrompt),
     );
 
     const {
@@ -161,7 +157,6 @@ const ChatInterface = memo(
         }
       };
     }, [user, chatState.hasShownSignInPrompt, setPersitedHasShownSignInPrompt]);
-
 
     type VisibilityType = 'public' | 'private';
 
@@ -384,27 +379,14 @@ const ChatInterface = memo(
       else if ((isAtBottom || !hasManuallyScrolled) && messages.length > 0) {
         scrollToElement();
       }
-    }, [
-      messages,
-      status,
-      isAtBottom,
-      hasManuallyScrolled,
-      scrollToElement,
-    ]);
+    }, [messages, status, isAtBottom, hasManuallyScrolled, scrollToElement]);
 
     useEffect(() => {
       dispatch({
         type: 'SET_ANY_DIALOG_OPEN',
-        payload:
-          chatState.commandDialogOpen ||
-          chatState.showSignInPrompt ||
-          chatState.showUpgradeDialog,
+        payload: chatState.commandDialogOpen || chatState.showSignInPrompt || chatState.showUpgradeDialog,
       });
-    }, [
-      chatState.commandDialogOpen,
-      chatState.showSignInPrompt,
-      chatState.showUpgradeDialog,
-    ]);
+    }, [chatState.commandDialogOpen, chatState.showSignInPrompt, chatState.showUpgradeDialog]);
 
     // Keyboard shortcut for command dialog
     useEffect(() => {

@@ -142,7 +142,6 @@ export const ChatDialogs = React.memo(
             }
           }}
         />
-
       </>
     );
   },

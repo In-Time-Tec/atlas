@@ -171,9 +171,7 @@ export default function TaskPage() {
   }, [error]);
 
   // Calculate limits and counts
-  const activeDailyTasks = allTasks.filter(
-    (t: Task) => t.frequency === 'daily' && t.status === 'active',
-  ).length;
+  const activeDailyTasks = allTasks.filter((t: Task) => t.frequency === 'daily' && t.status === 'active').length;
   const totalTasks = allTasks.filter((t: Task) => t.status !== 'archived').length;
   const canCreateMore = totalTasks < TASK_LIMITS.TOTAL_TASKS;
   const canCreateDailyMore = activeDailyTasks < TASK_LIMITS.DAILY_TASKS;
@@ -265,7 +263,7 @@ export default function TaskPage() {
           isProUser={isProUser}
           isProStatusLoading={isProStatusLoading}
         />
-        
+
         {/* Task Details Sidebar */}
         {selectedTask && (
           <>

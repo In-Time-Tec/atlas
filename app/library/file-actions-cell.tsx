@@ -37,7 +37,7 @@ export function FileActionsCell({ file, onRename }: FileActionsCellProps) {
 
   const deleteMutation = useDeleteFile();
   const updateMutation = useUpdateFile();
-  
+
   const isDeleting = deleteMutation.isPending;
 
   useEffect(() => {
@@ -60,7 +60,7 @@ export function FileActionsCell({ file, onRename }: FileActionsCellProps) {
   };
 
   const handleDeleteConfirm = () => {
-    deleteMutation.mutate(file.id);
+    deleteMutation.mutate({ id: file.id, organizationId: file.organizationId || undefined });
   };
 
   const handleRename = () => {

@@ -1,5 +1,6 @@
 import { betterAuth } from 'better-auth';
 import { nextCookies } from 'better-auth/next-js';
+import { organization as organizationPlugin } from 'better-auth/plugins';
 import {
   user,
   session,
@@ -14,6 +15,10 @@ import {
   customInstructions,
   stream,
   tasks,
+  organization,
+  organizationMember,
+  organizationInvitation,
+  userOrganizationSession,
 } from '@/lib/db/schema';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { db } from '@/lib/db';
@@ -72,6 +77,10 @@ export const auth = betterAuth({
       customInstructions,
       stream,
       tasks,
+      organization,
+      organizationMember,
+      organizationInvitation,
+      userOrganizationSession,
     },
   }),
   socialProviders: {
@@ -92,6 +101,40 @@ export const auth = betterAuth({
     autoNamespace: true,
   },
   plugins: [
+    organizationPlugin({
+      allowUserToCreateOrganization: true,
+      allowUserToLeaveOrganization: true,
+      organizationLimit: 10,
+      memberLimit: 100,
+      invitationExpiresIn: 60 * 60 * 24 * 7,
+      creatorRole: 'owner',
+      membershipLimit: 100,
+      schema: {
+        organization: {
+          modelName: 'organization',
+        },
+        member: {
+          modelName: 'organizationMember',
+        },
+        invitation: {
+          modelName: 'organizationInvitation',
+        },
+      },
+      sendInvitationEmail: async (data, request) => {
+        const baseUrl = process.env.NODE_ENV === 'production' ? 'https://atlas.ai' : 'http://localhost:3000';
+        const invitationUrl = `${baseUrl}/organization/accept-invitation?id=${data.invitation.id}`;
+        const inviterName = data.inviter.user.name || data.inviter.user.email;
+        
+        console.log('📧 Organization invitation email would be sent to:', data.email);
+        console.log('🏢 Organization:', data.organization.name);
+        console.log('🔗 Invitation ID:', data.invitation.id);
+        console.log('📝 Invitation role:', data.role);
+        console.log('👤 Invited by:', inviterName);
+        console.log('🔗 Invitation URL:', invitationUrl);
+        
+        return Promise.resolve();
+      },
+    }),
     dodopayments({
       client: dodoPayments,
       createCustomerOnSignUp: true,
@@ -386,7 +429,6 @@ export const auth = betterAuth({
 
                 console.log('✅ Upserted subscription:', data.id);
 
-                // Invalidate user caches when subscription changes
                 if (validUserId) {
                   invalidateUserCaches(validUserId);
                   console.log('🗑️ Invalidated caches for user:', validUserId);
