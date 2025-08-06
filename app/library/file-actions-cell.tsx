@@ -25,6 +25,7 @@ import { toast } from 'sonner';
 
 import { useDeleteFile, useUpdateFile } from '@/hooks/use-files';
 import type { FileData } from './columns';
+import { downloadFile } from '@/lib/utils/download';
 
 interface FileActionsCellProps {
   file: FileData;
@@ -37,8 +38,13 @@ export function FileActionsCell({ file, onRename }: FileActionsCellProps) {
   const deleteMutation = useDeleteFile();
   const updateMutation = useUpdateFile();
 
-  const handleDownload = () => {
-    window.open(file.url, '_blank');
+  const handleDownload = async () => {
+    try {
+      await downloadFile(file.url, file.originalName);
+      toast.success('Download started');
+    } catch (error) {
+      toast.error('Failed to download file');
+    }
   };
 
   const handleDeleteClick = () => {
