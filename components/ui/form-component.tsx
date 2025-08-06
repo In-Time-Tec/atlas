@@ -35,7 +35,7 @@ import {
 } from '@hugeicons/core-free-icons';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { FileLibraryDialog, FileLibraryFile } from '@/components/file-library';
+import { FileAttachmentDialog } from '@/components/file-attachment-dialog';
 import { FolderOpen, ChevronDown } from 'lucide-react';
 import {
   DropdownMenu,
@@ -748,7 +748,7 @@ const GroupModeToggle: React.FC<GroupSelectorProps> = React.memo(({ selectedGrou
       searchGroups.filter((group) => {
         if (!group.show) return false;
         if ('requireAuth' in group && group.requireAuth && !session) return false;
-        if (group.id === 'extreme') return false; // Exclude extreme from dropdown
+        if (group.id === 'extreme') return false;
         return true;
       }),
     [session],
@@ -997,7 +997,7 @@ const FormComponent: React.FC<FormComponentProps> = ({
       }
 
       if (
-        event.key.length > 1 && // Multi-character keys like 'Enter', 'Escape', etc.
+        event.key.length > 1 &&
         !['Backspace', 'Delete', 'Space'].includes(event.key)
       ) {
         return;
@@ -1315,7 +1315,7 @@ const FormComponent: React.FC<FormComponentProps> = ({
   );
 
   const handleLibraryFileSelect = useCallback(
-    (files: FileLibraryFile[]) => {
+    (files: Array<{ id: string; filename: string; originalName: string; contentType: string; size: number; url: string; createdAt: string; updatedAt: string }>) => {
       const libraryAttachments: Attachment[] = files.map((file) => ({
         name: file.originalName,
         contentType: file.contentType,
@@ -1844,7 +1844,6 @@ const FormComponent: React.FC<FormComponentProps> = ({
             'relative w-full flex flex-col gap-1 rounded-lg transition-all duration-300 font-sans!',
             hasInteracted ? 'z-51' : '',
             isDragging && 'ring-1 ring-border',
-            // attachments.length > 0 || uploadQueue.length > 0 ? 'bg-muted/70 p-1' : 'bg-transparent',
           )}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
@@ -1967,7 +1966,7 @@ const FormComponent: React.FC<FormComponentProps> = ({
                     target.style.height = 'auto';
 
                     const scrollHeight = target.scrollHeight;
-                    const maxHeight = 300; // Increased max height for desktop
+                    const maxHeight = 300;
 
                     if (scrollHeight > maxHeight) {
                       target.style.height = `${maxHeight}px`;
@@ -2197,12 +2196,20 @@ const FormComponent: React.FC<FormComponentProps> = ({
         </div>
       </TooltipProvider>
 
-      <FileLibraryDialog
+      <FileAttachmentDialog
         open={showLibraryDialog}
         onOpenChange={setShowLibraryDialog}
-        onFileSelect={handleLibraryFileSelect}
-        multiple={true}
-        mode="select"
+        onFilesSelect={handleLibraryFileSelect}
+        selectedFiles={attachments.filter(a => a.isFromLibrary).map(a => ({
+          id: a.libraryFileId || '',
+          filename: a.name,
+          originalName: a.name,
+          contentType: a.contentType,
+          size: a.size,
+          url: a.url,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        }))}
       />
     </div>
   );
