@@ -121,8 +121,10 @@ export async function POST(req: Request) {
 
   const userCheckTime = Date.now();
   const user = await getCurrentUser();
+  const { activeOrganization: userActiveOrganization } = await getUserWithOrganization();
   const streamId = 'stream-' + uuidv4();
   console.log(`⏱️  User check took: ${((Date.now() - userCheckTime) / 1000).toFixed(2)}s`);
+  console.log('🏢 Active organization:', userActiveOrganization?.name || 'Personal');
 
   if (!user) {
     console.log('User not found');
@@ -245,22 +247,25 @@ export async function POST(req: Request) {
 
       if (user) {
         const chatCheckStartTime = Date.now();
-        const chat = await getChatById({ id });
+        const chat = await getChatById({
+          id,
+          userId: user.id,
+          organizationId: userActiveOrganization?.id || null,
+        });
         console.log(`⏱️  Chat check took: ${((Date.now() - chatCheckStartTime) / 1000).toFixed(2)}s`);
 
         if (!chat) {
           const chatCreateStartTime = Date.now();
-
-          const { activeOrganization } = await getUserWithOrganization();
 
           await saveChat({
             id,
             userId: user.id,
             title: 'New conversation', // Temporary title that will be updated in onFinish
             visibility: selectedVisibilityType,
-            organizationId: activeOrganization?.id || null,
+            organizationId: userActiveOrganization?.id || null,
           });
           console.log(`⏱️  Chat creation took: ${((Date.now() - chatCreateStartTime) / 1000).toFixed(2)}s`);
+          console.log('📝 Created chat with organizationId:', userActiveOrganization?.id || 'null (Personal)');
         } else {
           if (chat.userId !== user.id) {
             throw new ChatSDKError('forbidden:chat', 'This chat belongs to another user');
@@ -475,7 +480,12 @@ export async function POST(req: Request) {
                 console.log('Generated title: ', title);
                 console.log('--------------------------------');
 
-                await updateChatTitleById({ chatId: id, title });
+                await updateChatTitleById({
+                  chatId: id,
+                  title,
+                  userId: user.id,
+                  organizationId: userActiveOrganization?.id || null,
+                });
               }
             } catch (titleError) {
               console.error('Failed to generate or update title:', titleError);

@@ -5,7 +5,7 @@ import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Separator } from '@/components/ui/separator';
 import { UserProfile } from '@/components/user-profile';
 import { OrganizationContextDisplay } from '@/components/organization-context-indicator';
-import { useOrganizationContext } from '@/hooks/use-organization-context';
+import { useCurrentOrganization } from '@/hooks/use-organization';
 import { cn } from '@/lib/utils';
 
 interface PageHeaderProps {
@@ -37,7 +37,7 @@ export function PageHeader({
   setIsCustomInstructionsEnabled = () => {},
   className,
 }: PageHeaderProps) {
-  const { organizationName, organizationId } = useOrganizationContext();
+  const { organization } = useCurrentOrganization();
   return (
     <header className={cn('flex h-16 shrink-0 items-center justify-between px-6 border-b border-border/50', className)}>
       <div className="flex items-center gap-1">
@@ -58,8 +58,8 @@ export function PageHeader({
           <>
             <Separator orientation="vertical" className="h-4" />
             <OrganizationContextDisplay
-              organizationName={organizationName}
-              organizationId={organizationId}
+              organizationName={organization?.name}
+              organizationId={organization?.id}
               showLabel={false}
             />
           </>

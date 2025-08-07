@@ -71,7 +71,12 @@ export const getUserWithOrganization = async (): Promise<{
     }),
   ]);
 
-  return { user, activeOrganization: activeOrganization || null, membership: membership || null };
+  // If user is not a member anymore, treat as personal context
+  if (!activeOrganization || !membership) {
+    return { user, activeOrganization: null, membership: null };
+  }
+
+  return { user, activeOrganization, membership };
 };
 
 export const getActiveOrganization = async (): Promise<Organization | null> => {

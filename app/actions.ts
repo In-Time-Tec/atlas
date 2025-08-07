@@ -1058,7 +1058,19 @@ export async function deleteChat(chatId: string) {
   if (!chatId) return null;
 
   try {
-    return await deleteChatById({ id: chatId });
+    const { getUserWithOrganization } = await import('@/lib/auth-utils');
+    const { user, activeOrganization } = await getUserWithOrganization();
+
+    if (!user) {
+      console.error('No authenticated user for deleteChat');
+      return null;
+    }
+
+    return await deleteChatById({
+      id: chatId,
+      userId: user.id,
+      organizationId: activeOrganization?.id || null,
+    });
   } catch (error) {
     console.error('Error deleting chat:', error);
     return null;
@@ -1071,7 +1083,20 @@ export async function updateChatVisibility(chatId: string, visibility: 'private'
   if (!chatId) return null;
 
   try {
-    return await updateChatVisiblityById({ chatId, visibility });
+    const { getUserWithOrganization } = await import('@/lib/auth-utils');
+    const { user, activeOrganization } = await getUserWithOrganization();
+
+    if (!user) {
+      console.error('No authenticated user for updateChatVisibility');
+      return null;
+    }
+
+    return await updateChatVisiblityById({
+      chatId,
+      visibility,
+      userId: user.id,
+      organizationId: activeOrganization?.id || null,
+    });
   } catch (error) {
     console.error('Error updating chat visibility:', error);
     return null;
@@ -1084,7 +1109,14 @@ export async function getChatInfo(chatId: string) {
   if (!chatId) return null;
 
   try {
-    return await getChatById({ id: chatId });
+    const { getUserWithOrganization } = await import('@/lib/auth-utils');
+    const { user, activeOrganization } = await getUserWithOrganization();
+
+    return await getChatById({
+      id: chatId,
+      userId: user?.id,
+      organizationId: activeOrganization?.id || null,
+    });
   } catch (error) {
     console.error('Error getting chat info:', error);
     return null;
@@ -1120,7 +1152,20 @@ export async function updateChatTitle(chatId: string, title: string) {
   if (!chatId || !title.trim()) return null;
 
   try {
-    return await updateChatTitleById({ chatId, title: title.trim() });
+    const { getUserWithOrganization } = await import('@/lib/auth-utils');
+    const { user, activeOrganization } = await getUserWithOrganization();
+
+    if (!user) {
+      console.error('No authenticated user for updateChatTitle');
+      return null;
+    }
+
+    return await updateChatTitleById({
+      chatId,
+      title: title.trim(),
+      userId: user.id,
+      organizationId: activeOrganization?.id || null,
+    });
   } catch (error) {
     console.error('Error updating chat title:', error);
     return null;
@@ -1401,16 +1446,12 @@ export async function getDodoExpirationDate() {
 const qstash = new Client({ token: serverEnv.QSTASH_TOKEN });
 
 async function validateTaskAccess(taskId: string, userId: string) {
-  const task = await getTaskById({ id: taskId });
-  if (!task || task.userId !== userId) {
-    throw new Error('Task not found or access denied');
-  }
-
   const { getUserWithOrganization } = await import('@/lib/auth-utils');
   const { activeOrganization } = await getUserWithOrganization();
   const currentOrganizationId = activeOrganization?.id || null;
 
-  if (task.organizationId !== currentOrganizationId) {
+  const task = await getTaskById({ id: taskId, userId, organizationId: currentOrganizationId });
+  if (!task) {
     throw new Error('Task not found or access denied');
   }
 
@@ -1618,6 +1659,8 @@ export async function createScheduledTask({
 
           await updateTask({
             id: task.id,
+            userId: user.id,
+            organizationId: activeOrganization?.id || null,
             qstashScheduleId: scheduleResponse.scheduleId,
           });
 
@@ -1625,7 +1668,7 @@ export async function createScheduledTask({
         }
       } catch (qstashError) {
         console.error('Error creating QStash schedule:', qstashError);
-        await deleteTask({ id: task.id });
+        await deleteTask({ id: task.id, userId: user.id, organizationId: activeOrganization?.id || null });
         throw new Error(
           `Failed to ${frequency === 'once' ? 'schedule one-time search' : 'create recurring schedule'}. Please try again.`,
         );
@@ -1696,7 +1739,7 @@ export async function updateTaskStatusAction({
           await qstash.schedules.resume({ schedule: task.qstashScheduleId });
           if (task.cronSchedule) {
             const nextRunAt = calculateNextRun(task.cronSchedule, task.timezone);
-            await updateTask({ id, nextRunAt });
+            await updateTask({ id, userId: user.id, organizationId: task.organizationId, nextRunAt });
           }
         } else if (status === 'archived') {
           await qstash.schedules.delete(task.qstashScheduleId);
@@ -1706,7 +1749,7 @@ export async function updateTaskStatusAction({
       }
     }
 
-    const updatedTask = await updateTaskStatus({ id, status });
+    const updatedTask = await updateTaskStatus({ id, userId: user.id, organizationId: task.organizationId, status });
     return { success: true, task: updatedTask };
   } catch (error) {
     console.error('Error updating task status:', error);
@@ -1799,6 +1842,8 @@ export async function updateTaskAction({
 
         const updatedTask = await updateTask({
           id,
+          userId: user.id,
+          organizationId: task.organizationId,
           title: title.trim(),
           prompt: prompt.trim(),
           frequency,
@@ -1816,6 +1861,8 @@ export async function updateTaskAction({
     } else {
       const updatedTask = await updateTask({
         id,
+        userId: user.id,
+        organizationId: task.organizationId,
         title: title.trim(),
         prompt: prompt.trim(),
         frequency,
@@ -1849,7 +1896,9 @@ export async function deleteTaskAction({ id }: { id: string }) {
       }
     }
 
-    const deletedTask = await deleteTask({ id });
+    const { getUserWithOrganization } = await import('@/lib/auth-utils');
+    const { activeOrganization } = await getUserWithOrganization();
+    const deletedTask = await deleteTask({ id, userId: user.id, organizationId: activeOrganization?.id || null });
     return { success: true, task: deletedTask };
   } catch (error) {
     console.error('Error deleting task:', error);

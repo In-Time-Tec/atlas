@@ -45,7 +45,7 @@ export function FilesWithOrganizationContext({
     }
 
     const groups = new Map<string, OrganizationGroup>();
-    
+
     files.forEach((file) => {
       const key = file.organizationId || 'personal';
       if (!groups.has(key)) {
@@ -85,35 +85,26 @@ export function FilesWithOrganizationContext({
               ) : (
                 <User size={16} className="text-muted-foreground" />
               )}
-              <h3 className="text-sm font-medium">
-                {group.organizationName || 'Personal Files'}
-              </h3>
+              <h3 className="text-sm font-medium">{group.organizationName || 'Personal Files'}</h3>
               <Badge variant="outline" className="text-xs">
                 {group.files.length}
               </Badge>
             </div>
           )}
-          
+
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
             {group.files.map((file) => (
-              <Card
-                key={file.id}
-                className="relative hover:shadow-md transition-shadow cursor-pointer"
-              >
+              <Card key={file.id} className="relative hover:shadow-md transition-shadow cursor-pointer">
                 <CardHeader className="pb-2">
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-2 min-w-0 flex-1">
                       <File size={16} className="text-muted-foreground shrink-0" />
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium truncate">
-                          {file.originalName || file.filename}
-                        </p>
+                        <p className="text-sm font-medium truncate">{file.originalName || file.filename}</p>
                         {file.folderName && (
                           <div className="flex items-center gap-1 mt-1">
                             <Folder size={10} className="text-muted-foreground" />
-                            <span className="text-xs text-muted-foreground truncate">
-                              {file.folderName}
-                            </span>
+                            <span className="text-xs text-muted-foreground truncate">{file.folderName}</span>
                           </div>
                         )}
                       </div>

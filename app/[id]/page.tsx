@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { getUser } from '@/lib/auth-utils';
+import { getUser, getUserWithOrganization } from '@/lib/auth-utils';
 import { getChatById, getMessagesByChatId } from '@/lib/db/queries';
 import { Message } from '@/lib/db/schema';
 import { Metadata } from 'next';
@@ -16,8 +16,14 @@ interface UIMessage {
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const id = (await params).id;
-  const chat = await getChatById({ id });
-  const user = await getUser();
+  const { user, activeOrganization } = await getUserWithOrganization();
+
+  const chat = await getChatById({
+    id,
+    userId: user?.id,
+    organizationId: activeOrganization?.id ?? null,
+  });
+
   if (!chat) {
     return { title: 'Atlas Chat' };
   }
@@ -30,6 +36,9 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
       title = 'Atlas Chat';
     }
     if (user!.id !== chat.userId) {
+      title = 'Atlas Chat';
+    }
+    if (chat.organizationId !== (activeOrganization?.id ?? null)) {
       title = 'Atlas Chat';
     }
     title = chat.title;
@@ -106,7 +115,14 @@ function convertToUIMessages(messages: Array<Message>): Array<UIMessage> {
 export default async function Page(props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
   const { id } = params;
-  const chat = await getChatById({ id });
+
+  const { user, activeOrganization } = await getUserWithOrganization();
+
+  const chat = await getChatById({
+    id,
+    userId: user?.id,
+    organizationId: activeOrganization?.id ?? null,
+  });
 
   if (!chat) {
     notFound();
@@ -114,14 +130,16 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
 
   console.log('Chat: ', chat);
 
-  const user = await getUser();
-
   if (chat.visibility === 'private') {
     if (!user) {
       return notFound();
     }
 
     if (user.id !== chat.userId) {
+      return notFound();
+    }
+
+    if (chat.organizationId !== (activeOrganization?.id ?? null)) {
       return notFound();
     }
   }

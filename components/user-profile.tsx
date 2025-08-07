@@ -11,7 +11,6 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useSession, signOut } from '@/lib/auth-client';
-import { redirect } from 'next/navigation';
 import { toast } from 'sonner';
 import {
   SignOut,
@@ -34,7 +33,8 @@ import { useRouter } from 'next/navigation';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import Link from 'next/link';
 import { User } from '@/lib/db/schema';
-import { SettingsDialog } from './settings-dialog';
+// Settings moved to dedicated page
+import { useCurrentOrganization } from '@/hooks/use-organization';
 
 const UserProfile = memo(
   ({
@@ -59,17 +59,14 @@ const UserProfile = memo(
     const [showEmail, setShowEmail] = useState(false);
     const [settingsOpen, setSettingsOpen] = useState(false);
     const { data: session, isPending } = useSession();
+    const { organization: currentOrg } = useCurrentOrganization();
     const router = useRouter();
 
-    // Use passed user prop if available, otherwise fall back to session
-    // BUT only use session for authentication check, not for settings dialog data
     const currentUser = user || session?.user;
     const isAuthenticated = !!(user || session);
 
-    // For settings dialog, always use the passed user prop (has unified data structure)
     const settingsUser = user;
 
-    // Use passed Pro status instead of calculating it
     const hasActiveSubscription = isProUser;
 
     if (isPending && !user) {
@@ -247,11 +244,11 @@ const UserProfile = memo(
 
             {isAuthenticated && (
               <>
-                <DropdownMenuItem className="cursor-pointer" onClick={() => setSettingsOpen(true)}>
-                  <div className="w-full flex items-center gap-2">
+                <DropdownMenuItem className="cursor-pointer" asChild>
+                  <Link href="/settings" className="w-full flex items-center gap-2">
                     <Gear size={16} />
                     <span>Settings</span>
-                  </div>
+                  </Link>
                 </DropdownMenuItem>
               </>
             )}
@@ -326,9 +323,41 @@ const UserProfile = memo(
             ) : (
               <DropdownMenuItem
                 className="cursor-pointer w-full flex items-center justify-between gap-2"
-                onClick={() => {
+                onClick={async () => {
+                  console.log('[UserProfile] Sign-in button clicked');
+                  console.log('[UserProfile] Current pathname:', window.location.pathname);
+                  console.log('[UserProfile] Session state:', { isAuthenticated, currentUser: currentUser?.email });
+
                   setSigningIn(true);
-                  redirect('/sign-in');
+                  toast.loading('Redirecting to sign-in...');
+
+                  try {
+                    const signInUrl = new URL('/sign-in', window.location.origin);
+                    signInUrl.searchParams.set('from', window.location.pathname);
+
+                    console.log('[UserProfile] Navigating to:', signInUrl.toString());
+
+                    await router.push(signInUrl.pathname + signInUrl.search);
+
+                    setTimeout(() => {
+                      if (window.location.pathname !== '/sign-in') {
+                        console.error('[UserProfile] Navigation failed, attempting direct navigation');
+                        window.location.href = signInUrl.toString();
+                      }
+                    }, 1000);
+                  } catch (error) {
+                    console.error('[UserProfile] Navigation error:', error);
+                    toast.error('Failed to navigate to sign-in page');
+
+                    const fallbackUrl = new URL('/sign-in', window.location.origin);
+                    fallbackUrl.searchParams.set('from', window.location.pathname);
+                    window.location.href = fallbackUrl.toString();
+                  } finally {
+                    setTimeout(() => {
+                      setSigningIn(false);
+                      toast.dismiss();
+                    }, 2000);
+                  }
                 }}
               >
                 <span>Sign In</span>
@@ -338,16 +367,7 @@ const UserProfile = memo(
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <SettingsDialog
-          open={settingsOpen}
-          onOpenChange={setSettingsOpen}
-          user={settingsUser}
-          subscriptionData={subscriptionData}
-          isProUser={isProUser}
-          isProStatusLoading={isProStatusLoading}
-          isCustomInstructionsEnabled={isCustomInstructionsEnabled}
-          setIsCustomInstructionsEnabled={setIsCustomInstructionsEnabled}
-        />
+        {/* Settings dialog removed in favor of /settings page */}
       </>
     );
   },

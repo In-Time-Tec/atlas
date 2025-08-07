@@ -35,7 +35,7 @@ export default function ClientWrapper({
         <AppSidebar />
         <SidebarInset className="flex flex-col h-full">
           <PageHeader
-            title=""
+            title="Chat"
             rightContent={<ChatHistoryButton onClickAction={() => setCommandDialogOpen(true)} />}
             user={user}
             subscriptionData={subscriptionData}

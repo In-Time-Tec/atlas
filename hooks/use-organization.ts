@@ -1,10 +1,5 @@
-import { useQuery, useMutation, useQueryClient, queryOptions } from '@tanstack/react-query';
-import {
-  organization,
-  useActiveOrganization as useActiveOrgBase,
-  useListOrganizations as useListOrgBase,
-  useSession,
-} from '@/lib/auth-client';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { organization, useListOrganizations as useListOrgBase, useSession } from '@/lib/auth-client';
 import { toast } from 'sonner';
 
 interface Organization {
@@ -38,10 +33,23 @@ const organizationKeys = {
 };
 
 export function useCurrentOrganization() {
-  const { data: activeOrg, error, isPending, refetch } = useActiveOrgBase();
+  const {
+    data: orgContext,
+    error,
+    isPending,
+    refetch,
+  } = useQuery({
+    queryKey: ['active-organization'],
+    queryFn: async () => {
+      const response = await fetch('/api/organizations/set-active', { method: 'GET' });
+      if (!response.ok) return { activeOrganization: null } as any;
+      return response.json();
+    },
+    staleTime: FIVE_MINUTES_IN_MS,
+  });
 
   return {
-    organization: activeOrg as Organization | null,
+    organization: (orgContext?.activeOrganization || null) as Organization | null,
     isLoading: isPending,
     error,
     refetch,
@@ -83,18 +91,27 @@ export function useOrganizationMembers(organizationId: string | undefined) {
 
 export function useSwitchOrganization() {
   const queryClient = useQueryClient();
+  const { data: session } = useSession();
 
   return useMutation({
     mutationFn: async (organizationId: string | null) => {
-      if (organizationId) {
-        await organization.setActive({ organizationId });
-      } else {
-        await organization.setActive({ organizationId: null });
+      const response = await fetch('/api/organizations/set-active', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ organizationId }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to set active organization');
       }
+
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: organizationKeys.all });
-
+      queryClient.invalidateQueries({ queryKey: ['active-organization'] });
+      queryClient.invalidateQueries({ queryKey: ['organization-context'] });
       queryClient.invalidateQueries({ queryKey: ['comprehensive-user-data'] });
       queryClient.invalidateQueries({ queryKey: ['chat'] });
       queryClient.invalidateQueries({ queryKey: ['chats'] });
@@ -262,6 +279,7 @@ export function useRefreshOrganizations() {
 
 export function useClearOrganizationCaches() {
   const queryClient = useQueryClient();
+  const { data: session } = useSession();
 
   return () => {
     queryClient.invalidateQueries({ queryKey: organizationKeys.all });
@@ -276,25 +294,7 @@ export function useClearOrganizationCaches() {
   };
 }
 
-export const organizationOptions = (orgId: string) =>
-  queryOptions({
-    queryKey: organizationKeys.detail(orgId),
-    queryFn: async () => {
-      try {
-        const response = await fetch('/api/organizations');
-        if (!response.ok) throw new Error('Failed to fetch organizations');
-        const orgs = await response.json();
-        return Array.isArray(orgs)
-          ? (orgs.find((org: any) => org.id === orgId) as Organization | undefined)
-          : undefined;
-      } catch (error) {
-        console.error('Failed to fetch organization:', error);
-        return undefined;
-      }
-    },
-    staleTime: FIVE_MINUTES_IN_MS,
-    gcTime: TEN_MINUTES_IN_MS,
-  });
+// Removed deprecated organizationOptions helper that referenced a non-existent /api/organizations route
 
 export function useIsInOrganization() {
   const { organization } = useCurrentOrganization();

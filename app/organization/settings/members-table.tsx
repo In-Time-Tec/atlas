@@ -91,6 +91,8 @@ export function MembersTable({
   onRemoveMember,
   onUpdateRole,
 }: MembersTableProps) {
+  const totalMembers = React.useMemo(() => members.length, [members]);
+  const ownersCount = React.useMemo(() => members.filter((m) => m.role === 'owner').length, [members]);
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [globalFilter, setGlobalFilter] = React.useState('');
@@ -99,8 +101,25 @@ export function MembersTable({
     pageSize: 10,
   });
   const [removeMemberId, setRemoveMemberId] = React.useState<string | null>(null);
-  const [editingMemberId, setEditingMemberId] = React.useState<string | null>(null);
-  const [editingRole, setEditingRole] = React.useState<'member' | 'admin' | 'owner'>('member');
+  const [pendingRoleEdits, setPendingRoleEdits] = React.useState<Record<string, 'member' | 'admin' | 'owner'>>({});
+
+  const diffs = React.useMemo(() => {
+    const changes: Array<{ id: string; role: 'member' | 'admin' | 'owner' }> = [];
+    for (const m of members) {
+      const nextRole = pendingRoleEdits[m.id];
+      if (nextRole && nextRole !== m.role) {
+        changes.push({ id: m.id, role: nextRole });
+      }
+    }
+    return changes;
+  }, [members, pendingRoleEdits]);
+  const hasChanges = diffs.length > 0;
+
+  const resetChanges = React.useCallback(() => setPendingRoleEdits({}), []);
+  const saveChanges = React.useCallback(() => {
+    diffs.forEach((c) => onUpdateRole(c.id, c.role));
+    setPendingRoleEdits({});
+  }, [diffs, onUpdateRole]);
 
   const columns = React.useMemo<ColumnDef<OrganizationMember>[]>(
     () => [
@@ -159,42 +178,40 @@ export function MembersTable({
           const RoleIcon = roleIcons[member.role];
           const colorClass = roleColors[member.role];
 
-          if (editingMemberId === member.id && isAdmin) {
+          const isOnlyOwner = member.role === 'owner' && ownersCount === 1;
+          const canEditRole = (isOwner || (isAdmin && member.role !== 'owner')) && !isOnlyOwner;
+
+          if (!canEditRole) {
             return (
-              <div className="flex items-center gap-2">
-                <Select value={editingRole} onValueChange={(value: any) => setEditingRole(value)}>
-                  <SelectTrigger className="h-8 w-32">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="member">Member</SelectItem>
-                    <SelectItem value="admin">Admin</SelectItem>
-                    {isOwner && <SelectItem value="owner">Owner</SelectItem>}
-                  </SelectContent>
-                </Select>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-6 px-2 text-xs"
-                  onClick={() => {
-                    onUpdateRole(member.id, editingRole);
-                    setEditingMemberId(null);
-                  }}
-                >
-                  Save
-                </Button>
-                <Button size="sm" variant="ghost" className="h-6 px-2 text-xs" onClick={() => setEditingMemberId(null)}>
-                  Cancel
-                </Button>
-              </div>
+              <Badge variant="outline" className={colorClass}>
+                <HugeiconsIcon icon={RoleIcon} size={14} className="mr-1" />
+                {member.role.charAt(0).toUpperCase() + member.role.slice(1)}
+              </Badge>
             );
           }
 
+          const current = pendingRoleEdits[member.id] ?? member.role;
           return (
-            <Badge variant="outline" className={colorClass}>
-              <HugeiconsIcon icon={RoleIcon} size={14} className="mr-1" />
-              {member.role.charAt(0).toUpperCase() + member.role.slice(1)}
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Select
+                value={current}
+                onValueChange={(value: any) =>
+                  setPendingRoleEdits((prev) => ({ ...prev, [member.id]: value }))
+                }
+              >
+                <SelectTrigger className="h-8 w-36">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="member">Member</SelectItem>
+                  <SelectItem value="admin">Admin</SelectItem>
+                  {isOwner && <SelectItem value="owner">Owner</SelectItem>}
+                </SelectContent>
+              </Select>
+              {current !== member.role && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary">pending</span>
+              )}
+            </div>
           );
         },
       },
@@ -227,10 +244,12 @@ export function MembersTable({
         id: 'actions',
         cell: ({ row }) => {
           const member = row.original;
-          const canManageMember = isAdmin && member.role !== 'owner';
-          const canRemoveMember = isOwner || (isAdmin && member.role === 'member');
+          const isOnlyOwner = member.role === 'owner' && ownersCount === 1;
+          const removeDisabled = totalMembers <= 1 || (member.role === 'owner' && ownersCount === 1);
+          const canRemoveMember = (isOwner || (isAdmin && member.role === 'member')) && !removeDisabled;
+          const canChangeRole = false; // Role is edited inline; no menu entry needed
 
-          if (!canManageMember && !canRemoveMember) {
+          if (!canChangeRole && !canRemoveMember) {
             return null;
           }
 
@@ -242,33 +261,20 @@ export function MembersTable({
                   <HugeiconsIcon icon={MoreVerticalIcon} size={16} />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                {canManageMember && (
-                  <>
-                    <DropdownMenuItem
-                      onClick={() => {
-                        setEditingMemberId(member.id);
-                        setEditingRole(member.role);
-                      }}
-                    >
-                      Change Role
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                  </>
-                )}
-                {canRemoveMember && (
+              <DropdownMenuContent align="end" className="min-w-[160px]">
+                {canRemoveMember ? (
                   <DropdownMenuItem className="text-destructive" onClick={() => setRemoveMemberId(member.id)}>
                     <HugeiconsIcon icon={Delete02Icon} size={16} className="mr-2" />
-                    Remove Member
+                    Remove member
                   </DropdownMenuItem>
-                )}
+                ) : null}
               </DropdownMenuContent>
             </DropdownMenu>
           );
         },
       },
     ],
-    [isOwner, isAdmin, editingMemberId, editingRole, onUpdateRole],
+    [isOwner, isAdmin, onUpdateRole, ownersCount, totalMembers, pendingRoleEdits],
   );
 
   const table = useReactTable({
@@ -311,7 +317,7 @@ export function MembersTable({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <div className="relative flex-1 max-w-sm">
           <HugeiconsIcon
             icon={Search01Icon}
@@ -325,10 +331,18 @@ export function MembersTable({
             className="pl-10"
           />
         </div>
+        <div className="flex items-center gap-2 ml-auto">
+          <Button variant="outline" size="sm" onClick={resetChanges} disabled={!hasChanges} className="h-8">
+            Discard
+          </Button>
+          <Button size="sm" onClick={saveChanges} disabled={!hasChanges} className="h-8">
+            Save changes
+          </Button>
+        </div>
       </div>
 
-      <div className="rounded-md border">
-        <div className="relative overflow-auto max-h-[400px]">
+      <div>
+        <div className="rounded-md border relative overflow-auto max-h-[400px]">
           <table className="w-full caption-bottom text-sm">
             <thead className="[&_tr]:border-b sticky top-0 z-10 bg-background">
               {table.getHeaderGroups().map((headerGroup) => (

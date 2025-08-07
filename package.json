@@ -18,7 +18,13 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "db:setup": "./scripts/db-setup.sh",
+    "db:up": "docker-compose up -d",
+    "db:down": "docker-compose down",
+    "db:restart": "docker-compose restart",
+    "db:logs": "docker-compose logs -f",
+    "db:clean": "docker-compose down -v"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "1.2.12",

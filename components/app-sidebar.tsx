@@ -11,7 +11,7 @@ import { useSession } from '@/lib/auth-client';
 import { useCurrentOrganization } from '@/hooks/use-organization';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { OrganizationSwitcher } from '@/components/organization-switcher';
+import SpaceSwitcher from '@/components/space-switcher';
 import {
   Sidebar,
   SidebarContent,
@@ -81,18 +81,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         {showAuthRoutes && (
           <SidebarGroup>
             <SidebarGroupLabel asChild className="text-dark px-2.5">
-              <OrganizationSwitcher />
+              <SpaceSwitcher />
             </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu className="px-3">
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={pathname === '/files'}>
-                    <Link href="/files" className="flex items-center gap-3">
-                      <FolderOpen size={16} />
-                      <span className="text-xs">Files</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     asChild
@@ -104,6 +96,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                     <Link href="/" className="flex items-center gap-3">
                       <ChatCircle size={16} />
                       <span className="text-xs">Chat</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={pathname === '/files'}>
+                    <Link href="/files" className="flex items-center gap-3">
+                      <FolderOpen size={16} />
+                      <span className="text-xs">Files</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -119,26 +119,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                     </SidebarMenuItem>
                   </>
                 )}
-                {currentOrg && (
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild isActive={pathname === '/organization/settings'}>
-                      <Link href="/organization/settings" className="flex items-center gap-3">
-                        <Gear size={16} />
-                        <span className="text-xs">Settings</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                )}
-                {!currentOrg && (
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild isActive={pathname === '/organization/settings'}>
-                      <Link href="/organization/settings" className="flex items-center gap-3">
-                        <Gear size={16} />
-                        <span className="text-xs">Settings</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                )}
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={pathname.startsWith('/settings')}>
+                    <Link href="/settings" className="flex items-center gap-3">
+                      <Gear size={16} />
+                      <span className="text-xs">Settings</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>

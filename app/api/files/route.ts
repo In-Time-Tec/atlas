@@ -5,7 +5,7 @@ import { and, asc, desc, eq, ilike, or, sql, isNull } from 'drizzle-orm';
 
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { fileLibrary, fileFolder } from '@/lib/db/schema';
+import { fileLibrary, fileFolder, organization } from '@/lib/db/schema';
 import { generateId } from 'ai';
 import { canUserAccessOrganizationFiles, canUserModifyOrganizationFiles } from '@/lib/organization-utils';
 
@@ -122,6 +122,8 @@ export async function GET(request: NextRequest) {
         url: fileLibrary.url,
         thumbnailUrl: fileLibrary.thumbnailUrl,
         folderId: fileLibrary.folderId,
+        organizationId: fileLibrary.organizationId,
+        organizationName: organization.name,
         tags: fileLibrary.tags,
         description: fileLibrary.description,
         isPublic: fileLibrary.isPublic,
@@ -132,6 +134,7 @@ export async function GET(request: NextRequest) {
       })
       .from(fileLibrary)
       .leftJoin(fileFolder, eq(fileLibrary.folderId, fileFolder.id))
+      .leftJoin(organization, eq(fileLibrary.organizationId, organization.id))
       .where(and(...whereConditions))
       .orderBy(orderDirection(orderByColumn))
       .limit(limit)
@@ -250,6 +253,17 @@ export async function POST(request: NextRequest) {
 
     await db.insert(fileLibrary).values(fileRecord);
 
+    // Fetch organization name if applicable for immediate client display
+    let orgName: string | null = null;
+    if (organizationId) {
+      const org = await db
+        .select({ name: organization.name })
+        .from(organization)
+        .where(eq(organization.id, organizationId))
+        .limit(1);
+      orgName = org[0]?.name || null;
+    }
+
     return NextResponse.json({
       id: fileRecord.id,
       filename: fileRecord.filename,
@@ -258,6 +272,8 @@ export async function POST(request: NextRequest) {
       size: fileRecord.size,
       url: fileRecord.url,
       thumbnailUrl: fileRecord.thumbnailUrl,
+      organizationId: fileRecord.organizationId,
+      organizationName: orgName,
       folderId: fileRecord.folderId,
       tags: fileRecord.tags,
       description: fileRecord.description,

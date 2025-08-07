@@ -49,11 +49,11 @@ function createTaskCompletionKey(taskId: string, lastRunAt?: Date | null): strin
 
 function isTaskCompleted(currentTask: Task, previousTask: Task | undefined): boolean {
   if (!previousTask) return false;
-  
+
   const wasRunning = previousTask.status === 'running';
   const isNowStopped = currentTask.status === 'active' || currentTask.status === 'paused';
   const hasNewRunTime = currentTask.lastRunAt !== previousTask.lastRunAt;
-  
+
   return wasRunning && isNowStopped && hasNewRunTime;
 }
 
@@ -63,10 +63,14 @@ function getTaskStatusMessage(task: Task): string {
 
 function getStatusDisplayText(status: string): string {
   switch (status) {
-    case 'active': return 'activated';
-    case 'paused': return 'paused';
-    case 'archived': return 'archived';
-    default: return 'updated';
+    case 'active':
+      return 'activated';
+    case 'paused':
+      return 'paused';
+    case 'archived':
+      return 'archived';
+    default:
+      return 'updated';
   }
 }
 
@@ -120,10 +124,7 @@ export function useTasks() {
       const previous = previousTasksRef.current.find((prev) => prev.id === current.id);
       const completionKey = createTaskCompletionKey(current.id, current.lastRunAt);
 
-      return (
-        isTaskCompleted(current, previous) &&
-        !recentCompletionsRef.current.has(completionKey)
-      );
+      return isTaskCompleted(current, previous) && !recentCompletionsRef.current.has(completionKey);
     });
 
     completedTasks.forEach((task) => {
@@ -253,8 +254,8 @@ export function useTasks() {
 
       const previousTasks = queryClient.getQueryData<Task[]>(taskKeys.withOrganization(organizationId));
 
-      queryClient.setQueryData<Task[]>(taskKeys.withOrganization(organizationId), (old = []) => 
-        old.filter((task) => task.id !== id)
+      queryClient.setQueryData<Task[]>(taskKeys.withOrganization(organizationId), (old = []) =>
+        old.filter((task) => task.id !== id),
       );
 
       return { previousTasks };

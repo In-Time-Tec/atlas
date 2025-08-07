@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
-import { redirect } from 'next/navigation';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   CommandDialog,
@@ -11,7 +10,20 @@ import {
   CommandList,
   CommandInput,
 } from '@/components/ui/command';
-import { Trash, ArrowUpRight, History, Globe, Lock, Search, Calendar, Hash, Check, X, Pencil } from 'lucide-react';
+import {
+  Trash,
+  ArrowUpRight,
+  History,
+  Globe,
+  Lock,
+  Search,
+  Calendar,
+  Hash,
+  Check,
+  X,
+  Pencil,
+  Building2,
+} from 'lucide-react';
 import { ListMagnifyingGlass } from '@phosphor-icons/react';
 import {
   isToday,
@@ -36,7 +48,7 @@ import { useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-q
 import { cn, invalidateChatsCache } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { ClassicLoader } from './ui/loading';
-import { useCurrentOrganization } from '@/hooks/use-organization';
+import { useCurrentOrganization, useOrganizations } from '@/hooks/use-organization';
 
 const SCROLL_BUFFER_MAX = 100;
 const SCROLL_THRESHOLD = 0.8;
@@ -52,6 +64,7 @@ interface Chat {
   createdAt: Date;
   userId: string;
   visibility: 'public' | 'private';
+  organizationId: string | null;
 }
 
 interface ChatHistoryDialogProps {
@@ -267,6 +280,7 @@ export function ChatHistoryDialog({ open, onOpenChange, user }: ChatHistoryDialo
 
   const { organization } = useCurrentOrganization();
   const organizationId = organization?.id || null;
+  const { organizations } = useOrganizations();
 
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState('');
@@ -275,6 +289,7 @@ export function ChatHistoryDialog({ open, onOpenChange, user }: ChatHistoryDialo
   const [deletingChatId, setDeletingChatId] = useState<string | null>(null);
   const [editingChatId, setEditingChatId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState('');
+  // Always show chats scoped to the current context (organization or personal)
   const [, forceUpdate] = useState({});
 
   const inputRef = useRef<HTMLInputElement>(null);
@@ -288,10 +303,12 @@ export function ChatHistoryDialog({ open, onOpenChange, user }: ChatHistoryDialo
     queryFn: async ({ pageParam }) => {
       if (!user?.id) return { chats: [], hasMore: false };
 
+      const orgIdToUse = organizationId; // null = personal, string = org
+
       if (pageParam) {
-        return await loadMoreChats(user.id, pageParam, 20, organizationId);
+        return await loadMoreChats(user.id, pageParam, 20, orgIdToUse);
       } else {
-        return await getUserChats(user.id, 20, undefined, undefined, organizationId);
+        return await getUserChats(user.id, 20, undefined, undefined, orgIdToUse);
       }
     },
     getNextPageParam: (lastPage) => {
@@ -308,6 +325,8 @@ export function ChatHistoryDialog({ open, onOpenChange, user }: ChatHistoryDialo
   });
 
   const allChats = data?.pages.flatMap((page) => page.chats) || [];
+
+  // No toggle; always scoped to current organization context
 
   useEffect(() => {
     if (!open) {
@@ -517,7 +536,7 @@ export function ChatHistoryDialog({ open, onOpenChange, user }: ChatHistoryDialo
         await deleteMutation.mutateAsync(id);
 
         if (currentChatId === id) {
-          redirect('/');
+          router.push('/');
         }
       } catch (error) {
         console.error('Delete chat error:', error);
@@ -621,6 +640,9 @@ export function ChatHistoryDialog({ open, onOpenChange, user }: ChatHistoryDialo
     const isDeleting = deletingChatId === chat.id;
     const isEditing = editingChatId === chat.id;
     const displayTitle = chat.title || 'Untitled Conversation';
+    const chatOrganization = chat.organizationId
+      ? organizations?.find((org: any) => org.id === chat.organizationId)
+      : null;
 
     return (
       <CommandItem
@@ -682,16 +704,24 @@ export function ChatHistoryDialog({ open, onOpenChange, user }: ChatHistoryDialo
                 maxLength={100}
               />
             ) : (
-              <span
-                className={cn(
-                  'truncate block',
-                  isCurrentChat && 'font-medium',
-                  isDeleting && 'text-red-700 dark:text-red-300 font-medium',
-                  isEditing && 'text-muted-foreground',
+              <div className="flex flex-col min-w-0">
+                <span
+                  className={cn(
+                    'truncate block',
+                    isCurrentChat && 'font-medium',
+                    isDeleting && 'text-red-700 dark:text-red-300 font-medium',
+                    isEditing && 'text-muted-foreground',
+                  )}
+                >
+                  {isDeleting ? `Delete "${displayTitle}"?` : displayTitle}
+                </span>
+                {chatOrganization && (
+                  <span className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
+                    <Building2 className="h-3 w-3" />
+                    {chatOrganization.name}
+                  </span>
                 )}
-              >
-                {isDeleting ? `Delete "${displayTitle}"?` : displayTitle}
-              </span>
+              </div>
             )}
           </div>
 
@@ -823,7 +853,7 @@ export function ChatHistoryDialog({ open, onOpenChange, user }: ChatHistoryDialo
 
   const handleSignIn = () => {
     onOpenChange(false);
-    redirect('/sign-in');
+    router.push('/sign-in');
   };
 
   if (!user) {
@@ -868,14 +898,34 @@ export function ChatHistoryDialog({ open, onOpenChange, user }: ChatHistoryDialo
               }}
             />
             <div className="flex items-center gap-1 absolute right-12 top-3">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-xs h-6 px-1.5 sm:px-2 bg-muted hover:bg-muted/80"
-                onClick={cycleSearchMode}
-              >
-                {currentModeInfo.label}
-              </Button>
+              {organization ? (
+                <div className="text-xs h-6 px-1.5 sm:px-2 border border-border/50 rounded inline-flex items-center gap-1">
+                  <Building2 className="h-3 w-3" />
+                  <span className="truncate max-w-[140px]">{organization.name}</span>
+                </div>
+              ) : (
+                <div className="text-xs h-6 px-1.5 sm:px-2 border border-border/50 rounded inline-flex items-center gap-1">
+                  <Lock className="h-3 w-3" />
+                  <span className="truncate max-w-[140px]">Personal</span>
+                </div>
+              )}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs h-6 px-1.5 sm:px-2 bg-muted hover:bg-muted/80"
+                    onClick={cycleSearchMode}
+                  >
+                    <Calendar className="h-3 w-3 mr-1" />
+                    {currentModeInfo.label}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="font-medium">Time filter</p>
+                  <p className="text-xs text-muted-foreground">Click to change time range</p>
+                </TooltipContent>
+              </Tooltip>
             </div>
           </div>
 

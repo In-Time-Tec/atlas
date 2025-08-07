@@ -4,10 +4,13 @@ import * as React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { OrganizationContextIndicator, OrganizationContextDisplay } from '@/components/organization-context-indicator';
 import { ResourceOrganizationBadge } from '@/components/resource-organization-badge';
-import { useOrganizationContext } from '@/hooks/use-organization-context';
+import { useCurrentOrganization } from '@/hooks/use-organization';
 
 export function OrganizationContextDemo() {
-  const { organizationName, organizationId, isPersonalContext } = useOrganizationContext();
+  const { organization } = useCurrentOrganization();
+  const organizationName = organization?.name;
+  const organizationId = organization?.id;
+  const isPersonalContext = !organization;
 
   return (
     <div className="space-y-6 p-6">
@@ -25,17 +28,17 @@ export function OrganizationContextDemo() {
             <CardDescription>Shows current organization context</CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">
-            <OrganizationContextIndicator 
+            <OrganizationContextIndicator
               organizationName={organizationName}
               organizationId={organizationId}
               size="sm"
             />
-            <OrganizationContextIndicator 
+            <OrganizationContextIndicator
               organizationName={organizationName}
               organizationId={organizationId}
               size="md"
             />
-            <OrganizationContextIndicator 
+            <OrganizationContextIndicator
               organizationName={organizationName}
               organizationId={organizationId}
               size="lg"
@@ -49,10 +52,7 @@ export function OrganizationContextDemo() {
             <CardDescription>Full context display with label</CardDescription>
           </CardHeader>
           <CardContent>
-            <OrganizationContextDisplay
-              organizationName={organizationName}
-              organizationId={organizationId}
-            />
+            <OrganizationContextDisplay organizationName={organizationName} organizationId={organizationId} />
           </CardContent>
         </Card>
 
@@ -62,16 +62,8 @@ export function OrganizationContextDemo() {
             <CardDescription>For individual resources</CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">
-            <ResourceOrganizationBadge
-              organizationId={organizationId}
-              organizationName={organizationName}
-              size="xs"
-            />
-            <ResourceOrganizationBadge
-              organizationId={organizationId}
-              organizationName={organizationName}
-              size="sm"
-            />
+            <ResourceOrganizationBadge organizationId={organizationId} organizationName={organizationName} size="xs" />
+            <ResourceOrganizationBadge organizationId={organizationId} organizationName={organizationName} size="sm" />
           </CardContent>
         </Card>
       </div>
@@ -104,9 +96,7 @@ export function OrganizationContextDemo() {
           <div className="space-y-3">
             <div className="flex items-center justify-between p-3 border rounded-lg">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-muted rounded flex items-center justify-center">
-                  📄
-                </div>
+                <div className="w-8 h-8 bg-muted rounded flex items-center justify-center">📄</div>
                 <div>
                   <div className="font-medium text-sm">example-document.pdf</div>
                   <div className="text-xs text-muted-foreground">PDF • 2.3 MB</div>
@@ -121,36 +111,24 @@ export function OrganizationContextDemo() {
 
             <div className="flex items-center justify-between p-3 border rounded-lg">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-muted rounded flex items-center justify-center">
-                  📊
-                </div>
+                <div className="w-8 h-8 bg-muted rounded flex items-center justify-center">📊</div>
                 <div>
                   <div className="font-medium text-sm">quarterly-report.xlsx</div>
                   <div className="text-xs text-muted-foreground">Excel • 1.8 MB</div>
                 </div>
               </div>
-              <ResourceOrganizationBadge
-                organizationId="org-123"
-                organizationName="Acme Corp"
-                size="xs"
-              />
+              <ResourceOrganizationBadge organizationId="org-123" organizationName="Acme Corp" size="xs" />
             </div>
 
             <div className="flex items-center justify-between p-3 border rounded-lg">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-muted rounded flex items-center justify-center">
-                  🖼️
-                </div>
+                <div className="w-8 h-8 bg-muted rounded flex items-center justify-center">🖼️</div>
                 <div>
                   <div className="font-medium text-sm">team-photo.jpg</div>
                   <div className="text-xs text-muted-foreground">Image • 5.2 MB</div>
                 </div>
               </div>
-              <ResourceOrganizationBadge
-                organizationId={null}
-                organizationName={null}
-                size="xs"
-              />
+              <ResourceOrganizationBadge organizationId={null} organizationName={null} size="xs" />
             </div>
           </div>
         </CardContent>

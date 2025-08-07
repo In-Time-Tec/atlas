@@ -63,13 +63,39 @@ export async function saveChat({
     throw new ChatSDKError('bad_request:database', 'Failed to save chat' + error);
   }
 }
-export async function deleteChatById({ id }: { id: string }) {
+export async function deleteChatById({
+  id,
+  userId,
+  organizationId,
+}: {
+  id: string;
+  userId: string;
+  organizationId?: string | null;
+}) {
   try {
+    const ownershipConditions = [eq(chat.id, id), eq(chat.userId, userId)];
+
+    if (organizationId !== undefined) {
+      ownershipConditions.push(
+        organizationId === null ? sql`${chat.organizationId} IS NULL` : eq(chat.organizationId, organizationId),
+      );
+    }
+
+    const [chatWithVerifiedOwnership] = await db
+      .select()
+      .from(chat)
+      .where(and(...ownershipConditions));
+
+    if (!chatWithVerifiedOwnership) {
+      throw new ChatSDKError('not_found:database', 'Chat not found or access denied');
+    }
+
     await db.delete(message).where(eq(message.chatId, id));
     await db.delete(stream).where(eq(stream.chatId, id));
-    const [chatsDeleted] = await db.delete(chat).where(eq(chat.id, id)).returning();
-    return chatsDeleted;
+    const [deletedChat] = await db.delete(chat).where(eq(chat.id, id)).returning();
+    return deletedChat;
   } catch (error) {
+    if (error instanceof ChatSDKError) throw error;
     throw new ChatSDKError('bad_request:database', 'Failed to delete chat by id');
   }
 }
@@ -126,10 +152,33 @@ export async function getChatsByUserId({
     throw new ChatSDKError('bad_request:database', 'Failed to get chats by user id');
   }
 }
-export async function getChatById({ id }: { id: string }) {
+export async function getChatById({
+  id,
+  userId,
+  organizationId,
+}: {
+  id: string;
+  userId?: string;
+  organizationId?: string | null;
+}) {
   try {
-    const [selectedChat] = await db.select().from(chat).where(eq(chat.id, id));
-    return selectedChat;
+    const searchConditions = [eq(chat.id, id)];
+
+    if (userId) {
+      searchConditions.push(eq(chat.userId, userId));
+    }
+
+    if (organizationId !== undefined) {
+      searchConditions.push(
+        organizationId === null ? sql`${chat.organizationId} IS NULL` : eq(chat.organizationId, organizationId),
+      );
+    }
+
+    const [foundChat] = await db
+      .select()
+      .from(chat)
+      .where(and(...searchConditions));
+    return foundChat;
   } catch (error) {
     console.log('Error getting chat by id', error);
     return null;
@@ -218,25 +267,75 @@ export async function deleteTrailingMessages({ id }: { id: string }) {
 export async function updateChatVisiblityById({
   chatId,
   visibility,
+  userId,
+  organizationId,
 }: {
   chatId: string;
   visibility: 'private' | 'public';
+  userId: string;
+  organizationId?: string | null;
 }) {
   try {
+    const accessVerification = [eq(chat.id, chatId), eq(chat.userId, userId)];
+
+    if (organizationId !== undefined) {
+      accessVerification.push(
+        organizationId === null ? sql`${chat.organizationId} IS NULL` : eq(chat.organizationId, organizationId),
+      );
+    }
+
+    const [authorizedChat] = await db
+      .select()
+      .from(chat)
+      .where(and(...accessVerification));
+
+    if (!authorizedChat) {
+      throw new ChatSDKError('not_found:database', 'Chat not found or access denied');
+    }
+
     return await db.update(chat).set({ visibility }).where(eq(chat.id, chatId));
   } catch (error) {
+    if (error instanceof ChatSDKError) throw error;
     throw new ChatSDKError('bad_request:database', 'Failed to update chat visibility by id');
   }
 }
-export async function updateChatTitleById({ chatId, title }: { chatId: string; title: string }) {
+export async function updateChatTitleById({
+  chatId,
+  title,
+  userId,
+  organizationId,
+}: {
+  chatId: string;
+  title: string;
+  userId: string;
+  organizationId?: string | null;
+}) {
   try {
-    const [updatedChat] = await db
+    const ownershipValidation = [eq(chat.id, chatId), eq(chat.userId, userId)];
+
+    if (organizationId !== undefined) {
+      ownershipValidation.push(
+        organizationId === null ? sql`${chat.organizationId} IS NULL` : eq(chat.organizationId, organizationId),
+      );
+    }
+
+    const [verifiedChat] = await db
+      .select()
+      .from(chat)
+      .where(and(...ownershipValidation));
+
+    if (!verifiedChat) {
+      throw new ChatSDKError('not_found:database', 'Chat not found or access denied');
+    }
+
+    const [renamedChat] = await db
       .update(chat)
       .set({ title, updatedAt: new Date() })
       .where(eq(chat.id, chatId))
       .returning();
-    return updatedChat;
+    return renamedChat;
   } catch (error) {
+    if (error instanceof ChatSDKError) throw error;
     throw new ChatSDKError('bad_request:database', 'Failed to update chat title by id');
   }
 }
@@ -654,14 +753,38 @@ export async function getTasksByUserId({ userId, organizationId }: { userId: str
     throw new ChatSDKError('bad_request:database', 'Failed to get tasks by user id');
   }
 }
-export async function getTaskById({ id }: { id: string }) {
+export async function getTaskById({
+  id,
+  userId,
+  organizationId,
+}: {
+  id: string;
+  userId?: string;
+  organizationId?: string | null;
+}) {
   try {
     console.log('🔍 Looking up task with ID:', id);
-    const [selectedTask] = await db.select().from(tasks).where(eq(tasks.id, id));
+    const searchConditions = [eq(tasks.id, id)];
+
+    if (userId) {
+      searchConditions.push(eq(tasks.userId, userId));
+    }
+
+    if (organizationId !== undefined) {
+      searchConditions.push(
+        organizationId === null ? sql`${tasks.organizationId} IS NULL` : eq(tasks.organizationId, organizationId),
+      );
+    }
+
+    const [selectedTask] = await db
+      .select()
+      .from(tasks)
+      .where(and(...searchConditions));
+
     if (selectedTask) {
       console.log('✅ Found task:', selectedTask.id, selectedTask.title);
     } else {
-      console.log('❌ No task found with ID:', id);
+      console.log('❌ No task found with ID:', id, 'or access denied');
     }
     return selectedTask;
   } catch (error) {
@@ -671,6 +794,8 @@ export async function getTaskById({ id }: { id: string }) {
 }
 export async function updateTask({
   id,
+  userId,
+  organizationId,
   title,
   prompt,
   frequency,
@@ -680,6 +805,8 @@ export async function updateTask({
   qstashScheduleId,
 }: {
   id: string;
+  userId: string;
+  organizationId?: string | null;
   title?: string;
   prompt?: string;
   frequency?: string;
@@ -689,6 +816,23 @@ export async function updateTask({
   qstashScheduleId?: string;
 }) {
   try {
+    const ownershipConditions = [eq(tasks.id, id), eq(tasks.userId, userId)];
+
+    if (organizationId !== undefined) {
+      ownershipConditions.push(
+        organizationId === null ? sql`${tasks.organizationId} IS NULL` : eq(tasks.organizationId, organizationId),
+      );
+    }
+
+    const [taskWithVerifiedOwnership] = await db
+      .select()
+      .from(tasks)
+      .where(and(...ownershipConditions));
+
+    if (!taskWithVerifiedOwnership) {
+      throw new ChatSDKError('not_found:database', 'Task not found or access denied');
+    }
+
     const updateData: any = { updatedAt: new Date() };
     if (title !== undefined) updateData.title = title;
     if (prompt !== undefined) updateData.prompt = prompt;
@@ -697,20 +841,43 @@ export async function updateTask({
     if (timezone !== undefined) updateData.timezone = timezone;
     if (nextRunAt !== undefined) updateData.nextRunAt = nextRunAt;
     if (qstashScheduleId !== undefined) updateData.qstashScheduleId = qstashScheduleId;
+
     const [updatedTask] = await db.update(tasks).set(updateData).where(eq(tasks.id, id)).returning();
     return updatedTask;
   } catch (error) {
+    if (error instanceof ChatSDKError) throw error;
     throw new ChatSDKError('bad_request:database', 'Failed to update task');
   }
 }
 export async function updateTaskStatus({
   id,
+  userId,
+  organizationId,
   status,
 }: {
   id: string;
+  userId: string;
+  organizationId?: string | null;
   status: 'active' | 'paused' | 'archived' | 'running';
 }) {
   try {
+    const ownershipConditions = [eq(tasks.id, id), eq(tasks.userId, userId)];
+
+    if (organizationId !== undefined) {
+      ownershipConditions.push(
+        organizationId === null ? sql`${tasks.organizationId} IS NULL` : eq(tasks.organizationId, organizationId),
+      );
+    }
+
+    const [taskWithVerifiedOwnership] = await db
+      .select()
+      .from(tasks)
+      .where(and(...ownershipConditions));
+
+    if (!taskWithVerifiedOwnership) {
+      throw new ChatSDKError('not_found:database', 'Task not found or access denied');
+    }
+
     const [updatedTask] = await db
       .update(tasks)
       .set({ status, updatedAt: new Date() })
@@ -718,11 +885,14 @@ export async function updateTaskStatus({
       .returning();
     return updatedTask;
   } catch (error) {
+    if (error instanceof ChatSDKError) throw error;
     throw new ChatSDKError('bad_request:database', 'Failed to update task status');
   }
 }
 export async function updateTaskLastRun({
   id,
+  userId,
+  organizationId,
   lastRunAt,
   lastRunChatId,
   nextRunAt,
@@ -733,6 +903,8 @@ export async function updateTaskLastRun({
   searchesPerformed,
 }: {
   id: string;
+  userId: string;
+  organizationId?: string | null;
   lastRunAt: Date;
   lastRunChatId: string;
   nextRunAt?: Date;
@@ -743,7 +915,7 @@ export async function updateTaskLastRun({
   searchesPerformed?: number;
 }) {
   try {
-    const currentTask = await getTaskById({ id });
+    const currentTask = await getTaskById({ id, userId, organizationId });
     if (!currentTask) {
       throw new Error('Task not found');
     }
@@ -771,9 +943,17 @@ export async function updateTaskLastRun({
     throw new ChatSDKError('bad_request:database', 'Failed to update task last run');
   }
 }
-export async function getTaskRunStats({ id }: { id: string }) {
+export async function getTaskRunStats({
+  id,
+  userId,
+  organizationId,
+}: {
+  id: string;
+  userId?: string;
+  organizationId?: string | null;
+}) {
   try {
-    const task = await getTaskById({ id });
+    const task = await getTaskById({ id, userId, organizationId });
     if (!task) return null;
     const runHistory = (task.runHistory as any[]) || [];
     return {
@@ -789,11 +969,37 @@ export async function getTaskRunStats({ id }: { id: string }) {
     return null;
   }
 }
-export async function deleteTask({ id }: { id: string }) {
+export async function deleteTask({
+  id,
+  userId,
+  organizationId,
+}: {
+  id: string;
+  userId: string;
+  organizationId?: string | null;
+}) {
   try {
+    const ownershipConditions = [eq(tasks.id, id), eq(tasks.userId, userId)];
+
+    if (organizationId !== undefined) {
+      ownershipConditions.push(
+        organizationId === null ? sql`${tasks.organizationId} IS NULL` : eq(tasks.organizationId, organizationId),
+      );
+    }
+
+    const [taskWithVerifiedOwnership] = await db
+      .select()
+      .from(tasks)
+      .where(and(...ownershipConditions));
+
+    if (!taskWithVerifiedOwnership) {
+      throw new ChatSDKError('not_found:database', 'Task not found or access denied');
+    }
+
     const [deletedTask] = await db.delete(tasks).where(eq(tasks.id, id)).returning();
     return deletedTask;
   } catch (error) {
+    if (error instanceof ChatSDKError) throw error;
     throw new ChatSDKError('bad_request:database', 'Failed to delete task');
   }
 }

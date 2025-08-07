@@ -43,6 +43,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useCurrentOrganization } from '@/hooks/use-organization';
 
 interface ModelSwitcherProps {
   selectedModel: string;
@@ -944,6 +945,7 @@ const FormComponent: React.FC<FormComponentProps> = ({
   setHasSubmitted,
   isLimitBlocked = false,
 }) => {
+  const { data: session } = useSession();
   const [uploadQueue, setUploadQueue] = useState<Array<string>>([]);
   const isMounted = useRef(true);
   const isCompositionActive = useRef(false);
@@ -954,6 +956,7 @@ const FormComponent: React.FC<FormComponentProps> = ({
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const [showLibraryDialog, setShowLibraryDialog] = useState(false);
   const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
+  const { organization: currentOrganization } = useCurrentOrganization();
 
   const isProUser = useMemo(
     () => user?.isProUser || (subscriptionData?.hasSubscription && subscriptionData?.subscription?.status === 'active'),
@@ -1104,6 +1107,9 @@ const FormComponent: React.FC<FormComponentProps> = ({
   const uploadFile = useCallback(async (file: File): Promise<Attachment> => {
     const formData = new FormData();
     formData.append('file', file);
+    if (currentOrganization?.id) {
+      formData.append('organizationId', currentOrganization.id);
+    }
 
     try {
       console.log('Uploading file:', file.name, file.type, file.size);

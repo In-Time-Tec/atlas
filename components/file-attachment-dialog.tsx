@@ -70,6 +70,10 @@ export function FileAttachmentDialog({
   });
 
   const { organization } = useCurrentOrganization();
+  const contextName = organization ? organization.name : 'Personal';
+  const contextDescription = organization
+    ? `Showing files from ${organization.name}`
+    : 'Showing files from your personal library';
 
   const { data, isLoading } = useFiles({
     limit: 1000,
@@ -305,6 +309,14 @@ export function FileAttachmentDialog({
         </DialogHeader>
 
         <div className="flex-1 flex flex-col space-y-4 overflow-hidden">
+          <div className="flex items-center justify-between p-2 bg-muted/30 rounded-lg">
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">Library:</span>
+              <span className="text-xs font-medium">{contextName}</span>
+            </div>
+            <span className="text-xs text-muted-foreground">{contextDescription}</span>
+          </div>
+
           <div className="relative">
             <HugeiconsIcon
               icon={Search01Icon}

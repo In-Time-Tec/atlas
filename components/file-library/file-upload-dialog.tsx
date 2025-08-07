@@ -39,6 +39,11 @@ export function FileUploadDialog({ onClose }: FileUploadDialogProps) {
   const { organization } = useCurrentOrganization();
   const uploadFile = useUploadFile();
 
+  const uploadContext = organization ? organization.name : 'Personal';
+  const uploadContextDescription = organization
+    ? `Files will be uploaded to ${organization.name} organization`
+    : 'Files will be uploaded to your personal library';
+
   const handleDragOver = React.useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setIsDragOver(true);
@@ -140,6 +145,14 @@ export function FileUploadDialog({ onClose }: FileUploadDialogProps) {
 
   return (
     <div className="space-y-6">
+      <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-muted-foreground">Upload to:</span>
+          <span className="text-sm font-medium">{uploadContext}</span>
+        </div>
+        <span className="text-xs text-muted-foreground">{uploadContextDescription}</span>
+      </div>
+
       <div
         className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
           isDragOver ? 'border-primary bg-primary/5' : 'border-muted-foreground/25 hover:border-muted-foreground/50'

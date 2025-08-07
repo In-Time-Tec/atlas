@@ -1,4 +1,3 @@
-// /app/api/tasks/route.ts
 import { generateTitleFromUserMessage, getGroupConfig } from '@/app/actions';
 import {
   convertToCoreMessages,
@@ -26,23 +25,15 @@ import { after } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
 import { CronExpressionParser } from 'cron-parser';
 import { sendTaskCompletionEmail } from '@/lib/email';
-
-// Import extreme search tool
 import { extremeSearchTool } from '@/lib/tools';
-
 type ResponseMessageWithoutId = CoreToolMessage | CoreAssistantMessage;
 type ResponseMessage = ResponseMessageWithoutId & { id: string };
-
 function getTrailingMessageId({ messages }: { messages: Array<ResponseMessage> }): string | null {
   const trailingMessage = messages.at(-1);
-
   if (!trailingMessage) return null;
-
   return trailingMessage.id;
 }
-
 let globalStreamContext: ResumableStreamContext | null = null;
-
 function getStreamContext() {
   if (!globalStreamContext) {
     try {
@@ -57,67 +48,51 @@ function getStreamContext() {
       }
     }
   }
-
   return globalStreamContext;
 }
-
 export async function POST(req: Request) {
   console.log('🔍 Tasks API endpoint hit from QStash');
-
   const requestStartTime = Date.now();
   let runDuration = 0;
   let runError: string | undefined;
-
   try {
     const { taskId, prompt, userId } = await req.json();
-
     console.log('--------------------------------');
     console.log('Task ID:', taskId);
     console.log('User ID:', userId);
     console.log('Prompt:', prompt);
     console.log('--------------------------------');
-
-    // Verify task exists and get details with retry logic
     let task: any = null;
     let retryCount = 0;
     const maxRetries = 3;
-
     while (!task && retryCount < maxRetries) {
       task = await getTaskById({ id: taskId });
       if (!task) {
         retryCount++;
         if (retryCount < maxRetries) {
           console.log(`Task not found on attempt ${retryCount}, retrying in ${retryCount * 500}ms...`);
-          await new Promise((resolve) => setTimeout(resolve, retryCount * 500)); // Exponential backoff
+          await new Promise((resolve) => setTimeout(resolve, retryCount * 500));
         }
       }
     }
-
     if (!task) {
       console.error('Task not found after', maxRetries, 'attempts:', taskId);
       return new Response('Task not found', { status: 404 });
     }
-
-    // Get user details
     const userResult = await getUserById(userId);
     if (!userResult) {
       console.error('User not found:', userId);
       return new Response('User not found', { status: 404 });
     }
-
-    // Generate a new chat ID for this scheduled search
     const chatId = uuidv4();
     const streamId = 'stream-' + uuidv4();
-
-    // Create the chat
     await saveChat({
       id: chatId,
       userId: userResult.id,
       title: `Scheduled: ${task.title}`,
       visibility: 'private',
+      organizationId: task.organizationId,
     });
-
-    // Create user message
     const userMessage = {
       id: uuidv4(),
       role: 'user' as const,
@@ -125,8 +100,6 @@ export async function POST(req: Request) {
       parts: [{ type: 'text' as const, text: prompt }],
       experimental_attachments: [],
     };
-
-    // Save user message and create stream ID
     await Promise.all([
       saveMessages({
         messages: [
@@ -142,17 +115,14 @@ export async function POST(req: Request) {
       }),
       createStreamId({ streamId, chatId }),
     ]);
-
-    // Set task status to running
     await updateTaskStatus({
       id: taskId,
+      userId,
+      organizationId: task.organizationId,
       status: 'running',
     });
-
-    // Create data stream with execute function
     const stream = createDataStream({
       execute: async (dataStream) => {
-        // Start streaming
         const result = streamText({
           model: atlas.languageModel('atlas-grok-4'),
           messages: convertToCoreMessages([userMessage]),
@@ -162,7 +132,6 @@ export async function POST(req: Request) {
           system: ` You are an advanced research assistant focused on deep analysis and comprehensive understanding with focus to be backed by citations in a research paper format.
   You objective is to always run the tool first and then write the response with citations!
   The current date is ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: '2-digit', weekday: 'short' })}.
-
   ### CRITICAL INSTRUCTION: (MUST FOLLOW AT ALL COSTS!!!)
   - ⚠️ URGENT: Run extreme_search tool INSTANTLY when user sends ANY message - NO EXCEPTIONS
   - DO NOT WRITE A SINGLE WORD before running the tool
@@ -174,7 +143,6 @@ export async function POST(req: Request) {
   - DO NOT begin responses with statements like "I'm assuming you're looking for information about X" or "Based on your query, I think you want to know about Y"
   - NEVER preface your answer with your interpretation of the user's query
   - GO STRAIGHT TO ANSWERING the question after running the tool
-
   ### Tool Guidelines:
   #### Extreme Search Tool:
   - Your primary tool is extreme_search, which allows for:
@@ -185,7 +153,6 @@ export async function POST(req: Request) {
   - ⚠️ MANDATORY: You MUST immediately run the tool first as soon as the user asks for it and then write the response with citations!
   - ⚠️ MANDATORY: You MUST NOT write any analysis before running the tool!
   - ⚠️ MANDATORY: You should only run the tool 'once and only once' and then write the response with citations!
-
   ### Response Guidelines:
   - You MUST immediately run the tool first as soon as the user asks for it and then write the response with citations!
   - ⚠️ MANDATORY: Every claim must have an inline citation
@@ -203,7 +170,6 @@ export async function POST(req: Request) {
   - The response should be in paragraphs and not in bullet points
   - Make the response as long as possible, do not skip any important details
   - All citations must be inline, placed immediately after the relevant information. Do not group citations at the end or in any references/bibliography section.
-
   ### ⚠️ Latex and Currency Formatting: (MUST FOLLOW AT ALL COSTS!!!)
   - ⚠️ MANDATORY: Use '$' for ALL inline equations without exception
   - ⚠️ MANDATORY: Use '$$' for ALL block equations without exception
@@ -212,7 +178,6 @@ export async function POST(req: Request) {
   - Mathematical expressions must always be properly delimited
   - Tables must use plain text without any formatting
   - don't use the h1 heading in the markdown response
-
   ### Response Format:
   - ⚠️ MANDATORY: Always start your response with "Key Points" heading followed by a bulleted list of the main findings
   - After the key points, proceed with detailed sections and finally a conclusion
@@ -245,43 +210,33 @@ export async function POST(req: Request) {
             console.log('Finish reason: ', event.finishReason);
             console.log('Steps: ', event.steps);
             console.log('Usage: ', event.usage);
-
             if (event.finishReason === 'stop') {
               try {
-                // Generate title for the chat
                 const title = await generateTitleFromUserMessage({
                   message: userMessage,
                 });
-
                 console.log('Generated title: ', title);
-
-                // Update the chat with the generated title
                 await updateChatTitleById({
                   chatId,
                   title: `Scheduled: ${title}`,
+                  userId: userResult.id,
+                  organizationId: task.organizationId,
                 });
-
-                // Track extreme search usage
                 const extremeSearchUsed = event.steps?.some((step) =>
                   step.toolCalls?.some((toolCall) => toolCall.toolName === 'extreme_search'),
                 );
-
                 if (extremeSearchUsed) {
                   console.log('Extreme search was used, incrementing count');
                   await incrementExtremeSearchUsage({ userId: userResult.id });
                 }
-
-                // Save assistant message
                 const assistantId = getTrailingMessageId({
                   messages: event.response.messages.filter((message: any) => message.role === 'assistant'),
                 });
-
                 if (assistantId) {
                   const [, assistantMessage] = appendResponseMessages({
                     messages: [userMessage],
                     responseMessages: event.response.messages,
                   });
-
                   await saveMessages({
                     messages: [
                       {
@@ -295,19 +250,15 @@ export async function POST(req: Request) {
                     ],
                   });
                 }
-
-                // Calculate run duration
                 runDuration = Date.now() - requestStartTime;
-
-                // Count searches performed (look for extreme_search tool calls)
                 const searchesPerformed =
                   event.steps?.reduce((total, step) => {
                     return total + (step.toolCalls?.filter((call) => call.toolName === 'extreme_search').length || 0);
                   }, 0) || 0;
-
-                // Update task with last run info including metrics
                 await updateTaskLastRun({
                   id: taskId,
+                  userId,
+                  organizationId: task.organizationId,
                   lastRunAt: new Date(),
                   lastRunChatId: chatId,
                   runStatus: 'success',
@@ -315,48 +266,39 @@ export async function POST(req: Request) {
                   tokensUsed: event.usage?.totalTokens,
                   searchesPerformed,
                 });
-
-                // Calculate next run time for recurring tasks
                 if (task.frequency !== 'once' && task.cronSchedule) {
                   try {
                     const options = {
                       currentDate: new Date(),
                       tz: task.timezone,
                     };
-
-                    // Strip CRON_TZ= prefix if present
                     const cleanCronSchedule = task.cronSchedule.startsWith('CRON_TZ=')
                       ? task.cronSchedule.split(' ').slice(1).join(' ')
                       : task.cronSchedule;
-
                     const interval = CronExpressionParser.parse(cleanCronSchedule, options);
                     const nextRunAt = interval.next().toDate();
-
                     await updateTask({
                       id: taskId,
+                      userId,
+                      organizationId: task.organizationId,
                       nextRunAt,
                     });
                   } catch (error) {
                     console.error('Error calculating next run time:', error);
                   }
                 } else if (task.frequency === 'once') {
-                  // Mark one-time tasks as paused after running
                   await updateTaskStatus({
                     id: taskId,
+                    userId,
+                    organizationId: task.organizationId,
                     status: 'paused',
                   });
                 }
-
-                // Send completion email to user
                 if (userResult.email) {
                   try {
-                    // Extract assistant response - use event.text which contains the full response
                     let assistantResponseText = event.text || '';
-
-                    // If event.text is empty, try extracting from messages
                     if (!assistantResponseText.trim()) {
                       const assistantMessages = event.response.messages.filter((msg: any) => msg.role === 'assistant');
-
                       for (const msg of assistantMessages) {
                         if (typeof msg.content === 'string') {
                           assistantResponseText += msg.content + '\n';
@@ -369,14 +311,11 @@ export async function POST(req: Request) {
                         }
                       }
                     }
-
                     console.log('📧 Assistant response length:', assistantResponseText.length);
                     console.log('📧 First 200 chars:', assistantResponseText.substring(0, 200));
-
                     const trimmedResponse = assistantResponseText.trim() || 'No response available.';
                     const finalResponse =
                       trimmedResponse.length > 2000 ? trimmedResponse.substring(0, 2000) + '...' : trimmedResponse;
-
                     await sendTaskCompletionEmail({
                       to: userResult.email,
                       chatTitle: title,
@@ -387,20 +326,17 @@ export async function POST(req: Request) {
                     console.error('Failed to send completion email:', emailError);
                   }
                 }
-
-                // Set task status back to active after successful completion
                 await updateTaskStatus({
                   id: taskId,
+                  userId,
+                  organizationId: task.organizationId,
                   status: 'active',
                 });
-
                 console.log('Scheduled search completed successfully');
               } catch (error) {
                 console.error('Error in onFinish:', error);
               }
             }
-
-            // Calculate and log overall request processing time
             const requestEndTime = Date.now();
             const processingTime = (requestEndTime - requestStartTime) / 1000;
             console.log('--------------------------------');
@@ -409,15 +345,13 @@ export async function POST(req: Request) {
           },
           onError: async (event) => {
             console.log('Error: ', event.error);
-
-            // Calculate run duration and capture error
             runDuration = Date.now() - requestStartTime;
             runError = (event.error as string) || 'Unknown error occurred';
-
-            // Update task with failed run info
             try {
               await updateTaskLastRun({
                 id: taskId,
+                userId,
+                organizationId: task.organizationId,
                 lastRunAt: new Date(),
                 lastRunChatId: chatId,
                 runStatus: 'error',
@@ -427,18 +361,17 @@ export async function POST(req: Request) {
             } catch (updateError) {
               console.error('Failed to update task with error info:', updateError);
             }
-
-            // Set task status back to active on error
             try {
               await updateTaskStatus({
                 id: taskId,
+                userId,
+                organizationId: task.organizationId,
                 status: 'active',
               });
               console.log('Reset task status to active after error');
             } catch (statusError) {
               console.error('Failed to reset task status after error:', statusError);
             }
-
             const requestEndTime = Date.now();
             const processingTime = (requestEndTime - requestStartTime) / 1000;
             console.log('--------------------------------');
@@ -446,9 +379,7 @@ export async function POST(req: Request) {
             console.log('--------------------------------');
           },
         });
-
         result.consumeStream();
-
         result.mergeIntoDataStream(dataStream, {
           sendReasoning: true,
         });
@@ -458,9 +389,7 @@ export async function POST(req: Request) {
         return 'Oops, an error occurred in scheduled search!';
       },
     });
-
     const streamContext = getStreamContext();
-
     if (streamContext) {
       return new Response(await streamContext.resumableStream(streamId, () => stream));
     } else {

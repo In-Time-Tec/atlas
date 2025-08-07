@@ -96,18 +96,18 @@ export function OrganizationCreateDialog({ open, onOpenChange }: OrganizationCre
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[420px] p-4 sm:p-5 rounded-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Building2 className="h-5 w-5" />
-            Create Organization
+            New Organization
           </DialogTitle>
-          <DialogDescription>
-            Create a new organization to collaborate with your team. You&apos;ll be the owner of this organization.
+          <DialogDescription className="text-xs">
+            Create a team space for your organization. Invite members later.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
             <FormField
               control={form.control}
               name="name"
@@ -117,13 +117,13 @@ export function OrganizationCreateDialog({ open, onOpenChange }: OrganizationCre
                   <FormControl>
                     <Input
                       {...field}
-                      placeholder="Acme Corporation"
+                      placeholder="Acme Inc."
                       disabled={isCreating}
                       onChange={(e) => handleNameChange(e.target.value)}
                       autoComplete="off"
                     />
                   </FormControl>
-                  <FormDescription>The display name for your organization</FormDescription>
+                  <FormDescription className="text-xs">Display name for your organization</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -135,16 +135,14 @@ export function OrganizationCreateDialog({ open, onOpenChange }: OrganizationCre
                 <FormItem>
                   <FormLabel>Organization Slug</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="acme-corp" disabled={isCreating} autoComplete="off" />
+                    <Input {...field} placeholder="acme-inc" disabled={isCreating} autoComplete="off" />
                   </FormControl>
-                  <FormDescription>
-                    A unique identifier for your organization. Use lowercase letters, numbers, and hyphens only.
-                  </FormDescription>
+                  <FormDescription className="text-xs">Lowercase letters, numbers, and hyphens only.</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            <div className="flex justify-end gap-3 pt-2">
+            <div className="flex justify-end gap-2 pt-2">
               <Button type="button" variant="outline" onClick={handleClose} disabled={isCreating}>
                 Cancel
               </Button>

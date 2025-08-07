@@ -24,7 +24,7 @@ const Home = () => {
         <AppSidebar />
         <SidebarInset className="flex flex-col h-full">
           <PageHeader
-            title=""
+            title="Chat"
             rightContent={<ChatHistoryButton onClickAction={() => setCommandDialogOpen(true)} />}
             user={user}
             subscriptionData={subscriptionData}
@@ -32,7 +32,7 @@ const Home = () => {
             isProStatusLoading={isProStatusLoading}
             isCustomInstructionsEnabled={isCustomInstructionsEnabled}
             setIsCustomInstructionsEnabled={setIsCustomInstructionsEnabled}
-            showOrganizationContext={false}
+            showOrganizationContext={true}
           />
           <div className="flex-1 overflow-hidden">
             <ChatInterface

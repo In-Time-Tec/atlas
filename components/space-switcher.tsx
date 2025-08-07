@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { useState } from 'react';
 import { Check, ChevronsUpDown, Plus, Building2, User } from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   useCurrentOrganization,
   useOrganizations,
@@ -32,12 +33,14 @@ import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 
-export function OrganizationSwitcher({ className }: { className?: string }) {
+export function SpaceSwitcher({ className }: { className?: string }) {
   const { user } = useUserData();
   const { organization: currentOrg, isLoading: isLoadingCurrent } = useCurrentOrganization();
   const { organizations, isLoading: isLoadingOrgs } = useOrganizations();
   const switchOrganization = useSwitchOrganization();
   const createOrganization = useCreateOrganization();
+  const pathname = usePathname();
+  const router = useRouter();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [newOrgName, setNewOrgName] = useState('');
   const [newOrgSlug, setNewOrgSlug] = useState('');
@@ -49,6 +52,11 @@ export function OrganizationSwitcher({ className }: { className?: string }) {
 
   const handleSwitchOrganization = async (orgId: string | null) => {
     await switchOrganization.mutateAsync(orgId);
+    // Stay on the same route; unified /settings handles both contexts.
+    // If user is on a route that no longer exists (legacy org settings), normalize to /settings.
+    if (pathname?.startsWith('/organization/settings')) {
+      router.replace('/settings');
+    }
   };
 
   const handleCreateOrganization = async () => {
@@ -56,10 +64,14 @@ export function OrganizationSwitcher({ className }: { className?: string }) {
 
     setIsCreating(true);
     try {
-      await createOrganization.mutateAsync({
+      const created = await createOrganization.mutateAsync({
         name: newOrgName,
         slug: newOrgSlug.toLowerCase().replace(/[^a-z0-9-]/g, '-'),
       });
+      // Auto-switch context to the newly created org when available
+      if (created && (created as any).id) {
+        await switchOrganization.mutateAsync((created as any).id as string);
+      }
       setCreateDialogOpen(false);
       setNewOrgName('');
       setNewOrgSlug('');
@@ -74,15 +86,6 @@ export function OrganizationSwitcher({ className }: { className?: string }) {
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '')
       .substring(0, 50);
-  };
-
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map((word) => word[0])
-      .join('')
-      .toUpperCase()
-      .substring(0, 2);
   };
 
   return (
@@ -100,11 +103,22 @@ export function OrganizationSwitcher({ className }: { className?: string }) {
             )}
             disabled={isLoading}
           >
-            {currentOrg ? (
-              <Building2 size={18} strokeWidth={1.5} className="shrink-0" />
-            ) : (
-              <User size={18} strokeWidth={1.5} className="shrink-0" />
-            )}
+            <Avatar className="h-4 w-4">
+              {currentOrg ? (
+                currentOrg.logo ? (
+                  <AvatarImage src={currentOrg.logo} alt={currentOrg.name} />
+                ) : (
+                  <></>
+                )
+              ) : user?.image ? (
+                <AvatarImage src={user.image} alt={user?.name || 'Personal'} />
+              ) : (
+                <></>
+              )}
+              <AvatarFallback className="text-[10px]">
+                {currentOrg ? <Building2 className="h-2.5 w-2.5" /> : <User className="h-2.5 w-2.5" />}
+              </AvatarFallback>
+            </Avatar>
             <span className="flex-1 truncate text-left">{displayName}</span>
             <ChevronsUpDown className="ml-auto h-4 w-4 shrink-0 opacity-50" />
           </button>
@@ -121,7 +135,8 @@ export function OrganizationSwitcher({ className }: { className?: string }) {
           >
             <div className="flex items-center gap-2">
               <Avatar className="h-4 w-4">
-                <AvatarFallback className="text-xs">
+                {user?.image && <AvatarImage src={user.image} alt={user?.name || 'Personal'} />}
+                <AvatarFallback className="text-[10px]">
                   <User className="h-2.5 w-2.5" />
                 </AvatarFallback>
               </Avatar>
@@ -144,7 +159,7 @@ export function OrganizationSwitcher({ className }: { className?: string }) {
                   <div className="flex items-center gap-2">
                     <Avatar className="h-4 w-4">
                       {org.logo && <AvatarImage src={org.logo} alt={org.name} />}
-                      <AvatarFallback className="text-xs">
+                      <AvatarFallback className="text-[10px]">
                         <Building2 className="h-2.5 w-2.5" />
                       </AvatarFallback>
                     </Avatar>
@@ -170,12 +185,15 @@ export function OrganizationSwitcher({ className }: { className?: string }) {
       </DropdownMenu>
 
       <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-[360px] p-4 sm:p-5 rounded-md">
           <DialogHeader>
-            <DialogTitle>Create Organization</DialogTitle>
-            <DialogDescription>Create a new organization to collaborate with your team.</DialogDescription>
+            <DialogTitle className="flex items-center gap-2">
+              <Building2 className="h-5 w-5" />
+              New Organization
+            </DialogTitle>
+            <DialogDescription className="text-xs">Create a team space for your organization.</DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
+          <div className="grid gap-3 py-2">
             <div className="grid gap-2">
               <Label htmlFor="org-name">Organization Name</Label>
               <Input
@@ -200,10 +218,10 @@ export function OrganizationSwitcher({ className }: { className?: string }) {
                 onChange={(e) => setNewOrgSlug(e.target.value)}
                 disabled={isCreating}
               />
-              <p className="text-xs text-muted-foreground">This will be used in URLs and must be unique.</p>
+              <p className="text-xs text-muted-foreground">Used in URLs. Must be unique.</p>
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="gap-2">
             <Button
               variant="outline"
               onClick={() => {
@@ -224,3 +242,7 @@ export function OrganizationSwitcher({ className }: { className?: string }) {
     </>
   );
 }
+
+export default SpaceSwitcher;
+
+

@@ -21,13 +21,13 @@ export function ResourceOrganizationBadge({
   hidePersonal = false,
 }: ResourceOrganizationBadgeProps) {
   const isPersonal = !organizationId || !organizationName;
-  
+
   if (isPersonal && hidePersonal) {
     return null;
   }
-  
+
   const displayName = isPersonal ? 'Personal' : organizationName;
-  
+
   const sizeClasses = {
     xs: 'h-4 text-[10px] px-1.5',
     sm: 'h-5 text-xs px-2',
@@ -44,17 +44,13 @@ export function ResourceOrganizationBadge({
       className={cn(
         'inline-flex items-center gap-1 font-medium border',
         sizeClasses[size],
-        isPersonal 
-          ? 'bg-secondary/30 text-secondary-foreground border-secondary/40' 
+        isPersonal
+          ? 'bg-secondary/30 text-secondary-foreground border-secondary/40'
           : 'bg-primary/10 text-primary border-primary/30',
-        className
+        className,
       )}
     >
-      {isPersonal ? (
-        <User size={iconSize[size]} />
-      ) : (
-        <Building2 size={iconSize[size]} />
-      )}
+      {isPersonal ? <User size={iconSize[size]} /> : <Building2 size={iconSize[size]} />}
       <span className="truncate">{displayName}</span>
     </Badge>
   );
