@@ -107,7 +107,7 @@
     "highlight.js": "^11.11.1",
     "katex": "^0.16.22",
     "lisere": "^0.1.1",
-    "lucide-react": "^0.536.0",
+    "lucide-react": "^0.537.0",
     "luxon": "^3.7.1",
     "mapbox-gl": "^3.13.0",
     "marked-react": "^3.0.1",
@@ -141,6 +141,7 @@
     "tailwind-scrollbar": "4.0.2",
     "unified": "^11.0.5",
     "unist-util-visit": "^5.0.0",
+    "use-stick-to-bottom": "^1.1.1",
     "uuid": "^11.1.0",
     "vaul": "^1.1.2",
     "zod": "^3.25.74"
