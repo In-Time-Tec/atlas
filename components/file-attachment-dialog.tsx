@@ -26,6 +26,7 @@ import {
   ArrowDown01Icon,
 } from '@hugeicons/core-free-icons';
 import { useFiles } from '@/hooks/use-files';
+import { useCurrentOrganization } from '@/hooks/use-organization';
 import { formatBytes } from '@/lib/utils';
 import { FileIcon } from '@/app/files/file-icon';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -68,9 +69,12 @@ export function FileAttachmentDialog({
     pageSize: 10,
   });
 
+  const { organization } = useCurrentOrganization();
+
   const { data, isLoading } = useFiles({
     limit: 1000,
     offset: 0,
+    organizationId: organization?.id,
   });
 
   const files = useMemo(() => {

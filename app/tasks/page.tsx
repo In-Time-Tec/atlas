@@ -26,7 +26,6 @@ import { PageHeader } from '@/components/page-header';
 import { TaskDetailsSidebar } from './components/task-details-sidebar';
 import { toast } from 'sonner';
 
-// Import our new components
 import { LoadingSkeletons } from './components/loading-skeleton';
 import { NoActiveTasksEmpty, NoArchivedTasksEmpty } from './components/empty-state';
 import { TotalLimitWarning, DailyLimitWarning } from './components/warning-card';
@@ -54,22 +53,13 @@ interface Task {
 export default function TaskPage() {
   const [activeTab, setActiveTab] = React.useState('active');
 
-  // Random examples state
   const [randomExamples, setRandomExamples] = React.useState(() => getRandomExamples(3));
-
-  // Sidebar state for task details
   const [selectedTask, setSelectedTask] = React.useState<Task | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
-
-  // Delete dialog state
   const [taskToDelete, setTaskToDelete] = React.useState<string | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
-
-  // Authentication and Pro status
   const { user, subscriptionData, isProUser, isLoading: isProStatusLoading } = useUserData();
   const router = useRouter();
-
-  // Tasks data and mutations
   const {
     tasks: allTasks,
     isLoading,
@@ -82,8 +72,6 @@ export default function TaskPage() {
     manualRefresh,
     isPending: isMutating,
   } = useTasks();
-
-  // Detect user timezone on client with fallback to available options
   const [detectedTimezone, setDetectedTimezone] = React.useState<string>('UTC');
 
   React.useEffect(() => {
@@ -91,7 +79,6 @@ export default function TaskPage() {
       const systemTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
       console.log('🌍 Detected system timezone:', systemTimezone);
 
-      // Check if the detected timezone is in our options list
       const matchingOption = timezoneOptions.find((option) => option.value === systemTimezone);
       console.log('📍 Found matching option:', matchingOption);
 
@@ -99,7 +86,6 @@ export default function TaskPage() {
         console.log('✅ Using exact match:', systemTimezone);
         setDetectedTimezone(systemTimezone);
       } else {
-        // Try to find a close match based on common patterns
         let fallbackTimezone = 'UTC';
 
         if (systemTimezone.includes('America/')) {
@@ -152,39 +138,27 @@ export default function TaskPage() {
       setDetectedTimezone('UTC');
     }
   }, []);
-
-  // Form logic hook
   const formHook = useTaskForm(detectedTimezone);
-
-  // Redirect non-authenticated users
   React.useEffect(() => {
     if (!isProStatusLoading && !user) {
       router.push('/sign-in');
     }
   }, [user, isProStatusLoading, router]);
-
-  // Handle error display
   React.useEffect(() => {
     if (error) {
       toast.error('Failed to load tasks');
     }
   }, [error]);
-
-  // Calculate limits and counts
   const activeDailyTasks = allTasks.filter((t: Task) => t.frequency === 'daily' && t.status === 'active').length;
   const totalTasks = allTasks.filter((t: Task) => t.status !== 'archived').length;
   const canCreateMore = totalTasks < TASK_LIMITS.TOTAL_TASKS;
   const canCreateDailyMore = activeDailyTasks < TASK_LIMITS.DAILY_TASKS;
-
-  // Filter tasks by tab
   const filteredTasks = allTasks.filter((task: Task) => {
     if (activeTab === 'active')
       return task.status === 'active' || task.status === 'paused' || task.status === 'running';
     if (activeTab === 'archived') return task.status === 'archived';
     return true;
   });
-
-  // Event handlers
   const handleStatusChange = async (id: string, status: 'active' | 'paused' | 'archived' | 'running') => {
     updateStatus({ id, status });
   };
@@ -223,8 +197,6 @@ export default function TaskPage() {
   const handleTaskChange = (newTask: Task) => {
     setSelectedTask(newTask);
   };
-
-  // Show loading state while checking authentication
   if (isProStatusLoading) {
     return (
       <SidebarProvider>
@@ -236,6 +208,7 @@ export default function TaskPage() {
             subscriptionData={subscriptionData}
             isProUser={isProUser}
             isProStatusLoading={isProStatusLoading}
+            showOrganizationContext={false}
           />
           <div className="flex-1 flex flex-col justify-center py-8">
             <div className="max-w-5xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
@@ -246,8 +219,6 @@ export default function TaskPage() {
       </SidebarProvider>
     );
   }
-
-  // Show upgrade prompt for non-Pro users
   if (!isProUser) {
     return <ProUpgradeScreen user={user} isProUser={isProUser} isProStatusLoading={isProStatusLoading} />;
   }
@@ -264,10 +235,8 @@ export default function TaskPage() {
           isProStatusLoading={isProStatusLoading}
         />
 
-        {/* Task Details Sidebar */}
         {selectedTask && (
           <>
-            {/* Backdrop */}
             <div
               className={`fixed inset-0 z-40 transition-all duration-300 ease-out ${
                 isSidebarOpen
@@ -277,7 +246,6 @@ export default function TaskPage() {
               onClick={() => setIsSidebarOpen(false)}
             />
 
-            {/* Sidebar */}
             <div
               className={`fixed right-0 top-0 h-screen max-w-xl w-full bg-background border-l z-50 shadow-xl transform transition-all duration-500 ease-out ${
                 isSidebarOpen ? 'translate-x-0' : 'translate-x-full'
@@ -296,10 +264,8 @@ export default function TaskPage() {
           </>
         )}
 
-        {/* Main Content */}
         <div className="flex-1 overflow-y-auto">
           <div className="max-w-5xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
-            {/* Header with Tabs and Add button */}
             <div className="flex justify-between items-center mb-6">
               <Tabs value={activeTab} onValueChange={setActiveTab}>
                 <TabsList className="bg-muted">
@@ -359,11 +325,9 @@ export default function TaskPage() {
               </div>
             </div>
 
-            {/* Limit Warnings */}
             {!canCreateMore && <TotalLimitWarning />}
             {canCreateMore && !canCreateDailyMore && <DailyLimitWarning />}
 
-            {/* Main Content Tabs */}
             <Tabs value={activeTab} defaultValue="active" className="space-y-6">
               <TabsContent value="active" className="space-y-6">
                 {isLoading ? (
@@ -411,7 +375,6 @@ export default function TaskPage() {
               </TabsContent>
             </Tabs>
 
-            {/* Example Cards */}
             <div className="mt-12">
               <h2 className="text-lg font-semibold mb-4">Example Tasks</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 overflow-hidden">
@@ -441,7 +404,6 @@ export default function TaskPage() {
           </div>
         </div>
 
-        {/* Delete Confirmation Dialog */}
         <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
           <AlertDialogContent>
             <AlertDialogHeader>

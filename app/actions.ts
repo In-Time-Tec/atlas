@@ -5,7 +5,7 @@ import { serverEnv } from '@/env/server';
 import { SearchGroupId } from '@/lib/utils';
 import { generateObject, UIMessage, generateText } from 'ai';
 import { z } from 'zod';
-import { getUser } from '@/lib/auth-utils';
+import { getUser, getUserWithOrganization } from '@/lib/auth-utils';
 import { atlas } from '@/ai/providers';
 import {
   getChatsByUserId,
@@ -42,6 +42,17 @@ export async function getCurrentUser() {
 
   const { getComprehensiveUserData } = await import('@/lib/user-data-server');
   return await getComprehensiveUserData();
+}
+
+export async function getOrganizationContext() {
+  'use server';
+
+  try {
+    return await getUserWithOrganization();
+  } catch (error) {
+    console.error('Error getting organization context:', error);
+    return null;
+  }
 }
 
 export async function suggestQuestions(history: any[]) {
@@ -997,6 +1008,7 @@ export async function getUserChats(
   limit: number = 20,
   startingAfter?: string,
   endingBefore?: string,
+  organizationId?: string | null,
 ): Promise<{ chats: any[]; hasMore: boolean }> {
   'use server';
 
@@ -1008,6 +1020,7 @@ export async function getUserChats(
       limit,
       startingAfter: startingAfter || null,
       endingBefore: endingBefore || null,
+      organizationId,
     });
   } catch (error) {
     console.error('Error fetching user chats:', error);
@@ -1019,6 +1032,7 @@ export async function loadMoreChats(
   userId: string,
   lastChatId: string,
   limit: number = 20,
+  organizationId?: string | null,
 ): Promise<{ chats: any[]; hasMore: boolean }> {
   'use server';
 
@@ -1030,6 +1044,7 @@ export async function loadMoreChats(
       limit,
       startingAfter: null,
       endingBefore: lastChatId,
+      organizationId,
     });
   } catch (error) {
     console.error('Error loading more chats:', error);
@@ -1385,6 +1400,23 @@ export async function getDodoExpirationDate() {
 
 const qstash = new Client({ token: serverEnv.QSTASH_TOKEN });
 
+async function validateTaskAccess(taskId: string, userId: string) {
+  const task = await getTaskById({ id: taskId });
+  if (!task || task.userId !== userId) {
+    throw new Error('Task not found or access denied');
+  }
+
+  const { getUserWithOrganization } = await import('@/lib/auth-utils');
+  const { activeOrganization } = await getUserWithOrganization();
+  const currentOrganizationId = activeOrganization?.id || null;
+
+  if (task.organizationId !== currentOrganizationId) {
+    throw new Error('Task not found or access denied');
+  }
+
+  return task;
+}
+
 function frequencyToCron(frequency: string, time: string, timezone: string, dayOfWeek?: string): string {
   const [hours, minutes] = time.split(':').map(Number);
 
@@ -1479,7 +1511,11 @@ export async function createScheduledTask({
       throw new Error('Pro subscription required for scheduled searches');
     }
 
-    const existingTasks = await getTasksByUserId({ userId: user.id });
+    const { getUserWithOrganization } = await import('@/lib/auth-utils');
+    const { activeOrganization } = await getUserWithOrganization();
+    const organizationId = activeOrganization?.id || null;
+
+    const existingTasks = await getTasksByUserId({ userId: user.id, organizationId });
     if (existingTasks.length >= 10) {
       throw new Error('You have reached the maximum limit of 10 tasks');
     }
@@ -1513,6 +1549,7 @@ export async function createScheduledTask({
 
     const task = await createTask({
       userId: user.id,
+      organizationId,
       title,
       prompt,
       frequency,
@@ -1602,14 +1639,19 @@ export async function createScheduledTask({
   }
 }
 
-export async function getUserTasks() {
+export async function getUserTasks(organizationId?: string | null) {
   try {
     const user = await getCurrentUser();
     if (!user) {
       throw new Error('Authentication required');
     }
 
-    const tasks = await getTasksByUserId({ userId: user.id });
+    const { getUserWithOrganization } = await import('@/lib/auth-utils');
+    const { activeOrganization } = await getUserWithOrganization();
+
+    const contextOrganizationId = organizationId !== undefined ? organizationId : activeOrganization?.id || null;
+
+    const tasks = await getTasksByUserId({ userId: user.id, organizationId: contextOrganizationId });
 
     const updatedTasks = tasks.map((task) => {
       if (task.status === 'active' && task.cronSchedule && task.frequency !== 'once') {
@@ -1644,10 +1686,7 @@ export async function updateTaskStatusAction({
       throw new Error('Authentication required');
     }
 
-    const task = await getTaskById({ id });
-    if (!task || task.userId !== user.id) {
-      throw new Error('Task not found or access denied');
-    }
+    const task = await validateTaskAccess(id, user.id);
 
     if (task.qstashScheduleId) {
       try {
@@ -1698,13 +1737,14 @@ export async function updateTaskAction({
       throw new Error('Authentication required');
     }
 
-    const task = await getTaskById({ id });
-    if (!task || task.userId !== user.id) {
-      throw new Error('Task not found or access denied');
-    }
+    const task = await validateTaskAccess(id, user.id);
 
     if (frequency === 'daily' && task.frequency !== 'daily') {
-      const existingTasks = await getTasksByUserId({ userId: user.id });
+      const { getUserWithOrganization } = await import('@/lib/auth-utils');
+      const { activeOrganization } = await getUserWithOrganization();
+      const organizationId = activeOrganization?.id || null;
+
+      const existingTasks = await getTasksByUserId({ userId: user.id, organizationId });
       const activeDailyTasks = existingTasks.filter(
         (existingTask) =>
           existingTask.frequency === 'daily' && existingTask.status === 'active' && existingTask.id !== id,
@@ -1799,10 +1839,7 @@ export async function deleteTaskAction({ id }: { id: string }) {
       throw new Error('Authentication required');
     }
 
-    const task = await getTaskById({ id });
-    if (!task || task.userId !== user.id) {
-      throw new Error('Task not found or access denied');
-    }
+    const task = await validateTaskAccess(id, user.id);
 
     if (task.qstashScheduleId) {
       try {
@@ -1827,10 +1864,7 @@ export async function testTaskAction({ id }: { id: string }) {
       throw new Error('Authentication required');
     }
 
-    const task = await getTaskById({ id });
-    if (!task || task.userId !== user.id) {
-      throw new Error('Task not found or access denied');
-    }
+    const task = await validateTaskAccess(id, user.id);
 
     if (task.status === 'archived' || task.status === 'running') {
       throw new Error(`Cannot test task with status: ${task.status}`);

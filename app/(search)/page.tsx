@@ -32,6 +32,7 @@ const Home = () => {
             isProStatusLoading={isProStatusLoading}
             isCustomInstructionsEnabled={isCustomInstructionsEnabled}
             setIsCustomInstructionsEnabled={setIsCustomInstructionsEnabled}
+            showOrganizationContext={false}
           />
           <div className="flex-1 overflow-hidden">
             <ChatInterface

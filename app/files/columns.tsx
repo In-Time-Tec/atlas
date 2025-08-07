@@ -10,6 +10,7 @@ import { formatBytes } from '@/lib/utils';
 import { FileIcon } from './file-icon';
 import { FileActionsCell } from './file-actions-cell';
 import { EditableFilename } from './editable-filename';
+import { ResourceOrganizationBadge } from '@/components/resource-organization-badge';
 
 export interface FileData {
   id: string;
@@ -25,6 +26,7 @@ export interface FileData {
   tags?: string[] | null;
   description?: string | null;
   organizationId?: string | null;
+  organizationName?: string | null;
 }
 
 interface ColumnContext {
@@ -339,6 +341,22 @@ export const createColumns = (context: ColumnContext): ColumnDef<FileData>[] => 
       );
     },
     size: 100,
+  },
+  {
+    id: 'organization',
+    accessorKey: 'organizationId',
+    header: 'Context',
+    cell: ({ row }) => {
+      const file = row.original;
+      return (
+        <ResourceOrganizationBadge
+          organizationId={file.organizationId}
+          organizationName={file.organizationName}
+          size="sm"
+        />
+      );
+    },
+    size: 90,
   },
   {
     id: 'actions',

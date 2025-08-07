@@ -42,11 +42,13 @@ export async function saveChat({
   userId,
   title,
   visibility,
+  organizationId,
 }: {
   id: string;
   userId: string;
   title: string;
   visibility: VisibilityType;
+  organizationId?: string | null;
 }) {
   try {
     return await db.insert(chat).values({
@@ -55,6 +57,7 @@ export async function saveChat({
       userId,
       title,
       visibility,
+      organizationId: organizationId || null,
     });
   } catch (error) {
     throw new ChatSDKError('bad_request:database', 'Failed to save chat' + error);
@@ -75,21 +78,29 @@ export async function getChatsByUserId({
   limit,
   startingAfter,
   endingBefore,
+  organizationId,
 }: {
   id: string;
   limit: number;
   startingAfter: string | null;
   endingBefore: string | null;
+  organizationId?: string | null;
 }) {
   try {
     const extendedLimit = limit + 1;
-    const query = (whereCondition?: SQL<any>) =>
-      db
-        .select()
-        .from(chat)
-        .where(whereCondition ? and(whereCondition, eq(chat.userId, id)) : eq(chat.userId, id))
-        .orderBy(desc(chat.createdAt))
-        .limit(extendedLimit);
+    const query = (whereCondition?: SQL<any>) => {
+      const baseConditions = [eq(chat.userId, id)];
+
+      if (organizationId !== undefined) {
+        baseConditions.push(
+          organizationId === null ? sql`${chat.organizationId} IS NULL` : eq(chat.organizationId, organizationId),
+        );
+      }
+
+      const combinedConditions = whereCondition ? and(whereCondition, ...baseConditions) : and(...baseConditions);
+
+      return db.select().from(chat).where(combinedConditions).orderBy(desc(chat.createdAt)).limit(extendedLimit);
+    };
     let filteredChats: Array<Chat> = [];
     if (startingAfter) {
       const [selectedChat] = await db.select().from(chat).where(eq(chat.id, startingAfter)).limit(1);
@@ -575,6 +586,7 @@ export async function getDodoPaymentsExpirationInfo({ userId }: { userId: string
 }
 export async function createTask({
   userId,
+  organizationId,
   title,
   prompt,
   frequency,
@@ -584,6 +596,7 @@ export async function createTask({
   qstashScheduleId,
 }: {
   userId: string;
+  organizationId?: string | null;
   title: string;
   prompt: string;
   frequency: string;
@@ -597,6 +610,7 @@ export async function createTask({
       .insert(tasks)
       .values({
         userId,
+        organizationId,
         title,
         prompt,
         frequency,
@@ -606,16 +620,36 @@ export async function createTask({
         qstashScheduleId,
       })
       .returning();
-    console.log('✅ Created task with ID:', newTask.id, 'for user:', userId);
+    console.log(
+      '✅ Created task with ID:',
+      newTask.id,
+      'for user:',
+      userId,
+      organizationId ? `in organization: ${organizationId}` : '(personal)',
+    );
     return newTask;
   } catch (error) {
     console.error('❌ Failed to create task:', error);
     throw new ChatSDKError('bad_request:database', 'Failed to create task');
   }
 }
-export async function getTasksByUserId({ userId }: { userId: string }) {
+export async function getTasksByUserId({ userId, organizationId }: { userId: string; organizationId?: string | null }) {
   try {
-    return await db.select().from(tasks).where(eq(tasks.userId, userId)).orderBy(desc(tasks.createdAt));
+    const whereConditions = [eq(tasks.userId, userId)];
+
+    if (organizationId !== undefined) {
+      if (organizationId === null) {
+        whereConditions.push(sql`${tasks.organizationId} IS NULL`);
+      } else {
+        whereConditions.push(eq(tasks.organizationId, organizationId));
+      }
+    }
+
+    return await db
+      .select()
+      .from(tasks)
+      .where(and(...whereConditions))
+      .orderBy(desc(tasks.createdAt));
   } catch (error) {
     throw new ChatSDKError('bad_request:database', 'Failed to get tasks by user id');
   }

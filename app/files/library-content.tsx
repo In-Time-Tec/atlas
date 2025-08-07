@@ -14,6 +14,7 @@ import { HugeiconsIcon } from '@hugeicons/react';
 import { PlusSignIcon, Search01Icon, RefreshIcon, Settings02Icon } from '@hugeicons/core-free-icons';
 
 import { useFiles, useUploadFile } from '@/hooks/use-files';
+import { useCurrentOrganization } from '@/hooks/use-organization';
 import { DataTable } from './data-table';
 import { createColumns } from './columns';
 import { LoadingSkeleton } from './loading-skeleton';
@@ -43,9 +44,12 @@ export function LibraryContent() {
   });
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
+  const { organization } = useCurrentOrganization();
+
   const { data, isLoading, isFetching, error, refetch } = useFiles({
     limit: 1000,
     offset: 0,
+    organizationId: organization?.id,
   });
 
   const uploadMutation = useUploadFile();
@@ -95,10 +99,13 @@ export function LibraryContent() {
       if (!files || files.length === 0) return;
 
       Array.from(files).forEach((file) => {
-        uploadMutation.mutate({ file });
+        uploadMutation.mutate({
+          file,
+          organizationId: organization?.id,
+        });
       });
     },
-    [uploadMutation],
+    [uploadMutation, organization?.id],
   );
 
   const handleUploadClick = React.useCallback(() => {

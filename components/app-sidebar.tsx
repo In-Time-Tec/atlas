@@ -80,7 +80,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarContent>
         {showAuthRoutes && (
           <SidebarGroup>
-            <SidebarGroupLabel asChild className='text-dark px-2.5'>
+            <SidebarGroupLabel asChild className="text-dark px-2.5">
               <OrganizationSwitcher />
             </SidebarGroupLabel>
             <SidebarGroupContent>
@@ -94,30 +94,31 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
-            <SidebarMenuButton
-              asChild
-              isActive={
-                pathname === '/' || /^\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(pathname)
-              }
-            >
-              <Link href="/" className="flex items-center gap-3">
-                <ChatCircle size={16} />
-                <span className="text-xs">Chat</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          {showAuthRoutes && (
-            <>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={pathname === '/tasks'}>
-                  <Link href="/tasks" className="flex items-center gap-3">
-                    <Binoculars size={16} />
-                    <span className="text-xs">Tasks</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>              
-            </>
-          )}
+                  <SidebarMenuButton
+                    asChild
+                    isActive={
+                      pathname === '/' ||
+                      /^\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(pathname)
+                    }
+                  >
+                    <Link href="/" className="flex items-center gap-3">
+                      <ChatCircle size={16} />
+                      <span className="text-xs">Chat</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                {showAuthRoutes && (
+                  <>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton asChild isActive={pathname === '/tasks'}>
+                        <Link href="/tasks" className="flex items-center gap-3">
+                          <Binoculars size={16} />
+                          <span className="text-xs">Tasks</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  </>
+                )}
                 {currentOrg && (
                   <SidebarMenuItem>
                     <SidebarMenuButton asChild isActive={pathname === '/organization/settings'}>
@@ -144,8 +145,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         )}
       </SidebarContent>
       <SidebarFooter>
-        <SidebarMenu>
-        </SidebarMenu>
+        <SidebarMenu></SidebarMenu>
       </SidebarFooter>
     </Sidebar>
   );

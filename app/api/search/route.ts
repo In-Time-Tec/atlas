@@ -6,6 +6,7 @@ import {
   getCurrentUser,
   getCustomInstructions,
 } from '@/app/actions';
+import { getUserWithOrganization } from '@/lib/auth-utils';
 import { SEARCH_LIMITS } from '@/lib/constants';
 import {
   convertToCoreMessages,
@@ -249,11 +250,15 @@ export async function POST(req: Request) {
 
         if (!chat) {
           const chatCreateStartTime = Date.now();
+
+          const { activeOrganization } = await getUserWithOrganization();
+
           await saveChat({
             id,
             userId: user.id,
             title: 'New conversation', // Temporary title that will be updated in onFinish
             visibility: selectedVisibilityType,
+            organizationId: activeOrganization?.id || null,
           });
           console.log(`⏱️  Chat creation took: ${((Date.now() - chatCreateStartTime) / 1000).toFixed(2)}s`);
         } else {

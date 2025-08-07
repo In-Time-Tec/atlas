@@ -124,14 +124,14 @@ export const auth = betterAuth({
         const baseUrl = process.env.NODE_ENV === 'production' ? 'https://atlas.ai' : 'http://localhost:3000';
         const invitationUrl = `${baseUrl}/organization/accept-invitation?id=${data.invitation.id}`;
         const inviterName = data.inviter.user.name || data.inviter.user.email;
-        
+
         console.log('📧 Organization invitation email would be sent to:', data.email);
         console.log('🏢 Organization:', data.organization.name);
         console.log('🔗 Invitation ID:', data.invitation.id);
         console.log('📝 Invitation role:', data.role);
         console.log('👤 Invited by:', inviterName);
         console.log('🔗 Invitation URL:', invitationUrl);
-        
+
         return Promise.resolve();
       },
     }),

@@ -4,6 +4,8 @@ import * as React from 'react';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Separator } from '@/components/ui/separator';
 import { UserProfile } from '@/components/user-profile';
+import { OrganizationContextDisplay } from '@/components/organization-context-indicator';
+import { useOrganizationContext } from '@/hooks/use-organization-context';
 import { cn } from '@/lib/utils';
 
 interface PageHeaderProps {
@@ -11,6 +13,7 @@ interface PageHeaderProps {
   leftContent?: React.ReactNode;
   rightContent?: React.ReactNode;
   showSidebarTrigger?: boolean;
+  showOrganizationContext?: boolean;
   user?: any;
   subscriptionData?: any;
   isProUser?: boolean;
@@ -25,6 +28,7 @@ export function PageHeader({
   leftContent,
   rightContent,
   showSidebarTrigger = true,
+  showOrganizationContext = true,
   user,
   subscriptionData,
   isProUser,
@@ -33,6 +37,7 @@ export function PageHeader({
   setIsCustomInstructionsEnabled = () => {},
   className,
 }: PageHeaderProps) {
+  const { organizationName, organizationId } = useOrganizationContext();
   return (
     <header className={cn('flex h-16 shrink-0 items-center justify-between px-6 border-b border-border/50', className)}>
       <div className="flex items-center gap-1">
@@ -47,6 +52,16 @@ export function PageHeader({
           <>
             <Separator orientation="vertical" className="h-4" />
             {leftContent}
+          </>
+        )}
+        {showOrganizationContext && (title || leftContent) && (
+          <>
+            <Separator orientation="vertical" className="h-4" />
+            <OrganizationContextDisplay
+              organizationName={organizationName}
+              organizationId={organizationId}
+              showLabel={false}
+            />
           </>
         )}
       </div>

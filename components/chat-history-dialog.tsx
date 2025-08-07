@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/exhaustive-deps */
 'use client';
 
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
@@ -37,13 +36,15 @@ import { useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-q
 import { cn, invalidateChatsCache } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { ClassicLoader } from './ui/loading';
+import { useCurrentOrganization } from '@/hooks/use-organization';
 
-// Constants
 const SCROLL_BUFFER_MAX = 100;
 const SCROLL_THRESHOLD = 0.8;
 const INTERSECTION_ROOT_MARGIN = '100px';
-const FOCUS_DELAY = 100;
-const LOADING_DEBOUNCE = 300;
+const FOCUS_DELAY_MS = 100;
+const LOADING_DEBOUNCE_MS = 300;
+const CACHE_DURATION_MS = 30000;
+const MAX_CACHE_SIZE = 1000;
 
 interface Chat {
   id: string;
@@ -59,15 +60,12 @@ interface ChatHistoryDialogProps {
   user: User | null;
 }
 
-// Search modes for different filtering strategies
 type SearchMode = 'all' | 'title' | 'date' | 'visibility';
 
-// Helper function to validate chat ID format
 function isValidChatId(id: string): boolean {
   return /^[a-zA-Z0-9_-]+$/.test(id) && id.length > 0;
 }
 
-// Helper function to categorize chats by date
 function categorizeChatsByDate(chats: Chat[]) {
   const today: Chat[] = [];
   const yesterday: Chat[] = [];
@@ -99,18 +97,15 @@ function categorizeChatsByDate(chats: Chat[]) {
   return { today, yesterday, thisWeek, lastWeek, thisMonth, older };
 }
 
-// Format time in a compact way with memoization
 const formatCompactTime = (() => {
   const cache = new Map<string, { result: string; timestamp: number }>();
-  const CACHE_DURATION = 30000; // 30 seconds cache duration
 
   return function (date: Date): string {
     const now = new Date();
     const dateKey = date.getTime().toString();
     const cached = cache.get(dateKey);
 
-    // Check if cache is valid (less than 30 seconds old)
-    if (cached && now.getTime() - cached.timestamp < CACHE_DURATION) {
+    if (cached && now.getTime() - cached.timestamp < CACHE_DURATION_MS) {
       return cached.result;
     }
 
@@ -149,8 +144,7 @@ const formatCompactTime = (() => {
       }
     }
 
-    // Keep cache size reasonable
-    if (cache.size > 1000) {
+    if (cache.size > MAX_CACHE_SIZE) {
       cache.clear();
     }
 
@@ -159,17 +153,14 @@ const formatCompactTime = (() => {
   };
 })();
 
-// Custom fuzzy search function
 function fuzzySearch(query: string, text: string): boolean {
   if (!query) return true;
 
   const queryLower = query.toLowerCase();
   const textLower = text.toLowerCase();
 
-  // Exact match gets highest priority
   if (textLower.includes(queryLower)) return true;
 
-  // Fuzzy matching - check if all characters in query appear in order
   let queryIndex = 0;
   for (let i = 0; i < textLower.length && queryIndex < queryLower.length; i++) {
     if (textLower[i] === queryLower[queryIndex]) {
@@ -180,9 +171,7 @@ function fuzzySearch(query: string, text: string): boolean {
   return queryIndex === queryLower.length;
 }
 
-// Function to parse DD/MM/YY date format
 function parseDateQuery(dateStr: string): Date | null {
-  // Check if the string matches DD/MM/YY format
   const dateRegex = /^(\d{1,2})\/(\d{1,2})\/(\d{2})$/;
   const match = dateStr.match(dateRegex);
 
@@ -190,17 +179,15 @@ function parseDateQuery(dateStr: string): Date | null {
 
   const [, dayStr, monthStr, yearStr] = match;
   const day = parseInt(dayStr, 10);
-  const month = parseInt(monthStr, 10) - 1; // Month is 0-indexed in Date
-  const year = 2000 + parseInt(yearStr, 10); // Convert YY to YYYY (assuming 20XX)
+  const month = parseInt(monthStr, 10) - 1;
+  const year = 2000 + parseInt(yearStr, 10);
 
-  // Validate the date components
   if (day < 1 || day > 31 || month < 0 || month > 11) {
     return null;
   }
 
   const date = new Date(year, month, day);
 
-  // Check if the date is valid (handles cases like 31/02/25)
   if (date.getDate() !== day || date.getMonth() !== month || date.getFullYear() !== year) {
     return null;
   }
@@ -208,7 +195,6 @@ function parseDateQuery(dateStr: string): Date | null {
   return date;
 }
 
-// Function to check if two dates are on the same day
 function isSameDay(date1: Date, date2: Date): boolean {
   return (
     date1.getDate() === date2.getDate() &&
@@ -217,13 +203,11 @@ function isSameDay(date1: Date, date2: Date): boolean {
   );
 }
 
-// Advanced search function with multiple criteria
 function advancedSearch(chat: Chat, query: string, mode: SearchMode): boolean {
   if (!query) return true;
 
   const queryLower = query.toLowerCase();
 
-  // Handle special search prefixes
   if (query.startsWith('public:')) {
     return chat.visibility === 'public' && fuzzySearch(query.slice(7), chat.title);
   }
@@ -244,28 +228,23 @@ function advancedSearch(chat: Chat, query: string, mode: SearchMode): boolean {
     return isThisMonth(new Date(chat.createdAt)) && fuzzySearch(query.slice(6), chat.title);
   }
 
-  // Handle date: prefix with DD/MM/YY format
   if (query.startsWith('date:')) {
     const dateQuery = query.slice(5).trim();
     const parsedDate = parseDateQuery(dateQuery);
     if (parsedDate) {
       return isSameDay(new Date(chat.createdAt), parsedDate);
     }
-    // If not a valid DD/MM/YY format, fall back to fuzzy search on the date query
     return fuzzySearch(dateQuery, new Date(chat.createdAt).toLocaleDateString());
   }
 
-  // Regular search based on mode
   switch (mode) {
     case 'title':
       return fuzzySearch(query, chat.title);
     case 'date':
-      // In date mode, first try to parse as DD/MM/YY format
       const parsedDate = parseDateQuery(query.trim());
       if (parsedDate) {
         return isSameDay(new Date(chat.createdAt), parsedDate);
       }
-      // If not DD/MM/YY format, fall back to fuzzy search on date string
       const dateStr = new Date(chat.createdAt).toLocaleDateString();
       return fuzzySearch(query, dateStr);
     case 'visibility':
@@ -280,12 +259,14 @@ function advancedSearch(chat: Chat, query: string, mode: SearchMode): boolean {
   }
 }
 
-// Main component
 export function ChatHistoryDialog({ open, onOpenChange, user }: ChatHistoryDialogProps) {
   const pathname = usePathname();
   const router = useRouter();
   const rawChatId = pathname?.startsWith('/search/') ? pathname.split('/')[2] : null;
   const currentChatId = rawChatId && isValidChatId(rawChatId) ? rawChatId : null;
+
+  const { organization } = useCurrentOrganization();
+  const organizationId = organization?.id || null;
 
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState('');
@@ -296,25 +277,21 @@ export function ChatHistoryDialog({ open, onOpenChange, user }: ChatHistoryDialo
   const [editingTitle, setEditingTitle] = useState('');
   const [, forceUpdate] = useState({});
 
-  // Focus search input on dialog open
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const loadMoreTriggerRef = useRef<HTMLDivElement>(null);
   const focusTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const updateTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Use infinite query for pagination
   const { data, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage, refetch } = useInfiniteQuery({
-    queryKey: ['chats', user?.id],
+    queryKey: ['chats', user?.id, organizationId],
     queryFn: async ({ pageParam }) => {
       if (!user?.id) return { chats: [], hasMore: false };
 
       if (pageParam) {
-        // Load more chats using the last chat ID as cursor
-        return await loadMoreChats(user.id, pageParam, 20);
+        return await loadMoreChats(user.id, pageParam, 20, organizationId);
       } else {
-        // Initial load
-        return await getUserChats(user.id, 20);
+        return await getUserChats(user.id, 20, undefined, undefined, organizationId);
       }
     },
     getNextPageParam: (lastPage) => {
@@ -324,18 +301,14 @@ export function ChatHistoryDialog({ open, onOpenChange, user }: ChatHistoryDialo
     enabled: !!user?.id,
     refetchOnWindowFocus: true,
     refetchOnMount: true,
-    staleTime: 30000, // 30 seconds
+    staleTime: 30000,
     initialPageParam: undefined,
-    // Initialize with empty array when user is null
     initialData: user ? undefined : { pages: [{ chats: [], hasMore: false }], pageParams: [undefined] },
-    // Don't keep data in cache when logged out
     gcTime: user ? 5 * 60 * 1000 : 0,
   });
 
-  // Flatten all chats from all pages
   const allChats = data?.pages.flatMap((page) => page.chats) || [];
 
-  // Clear delete confirmation state when dialog closes
   useEffect(() => {
     if (!open) {
       setDeletingChatId(null);
@@ -347,7 +320,6 @@ export function ChatHistoryDialog({ open, onOpenChange, user }: ChatHistoryDialo
         clearTimeout(focusTimeoutRef.current);
         focusTimeoutRef.current = null;
       }
-      // Clear update timer when dialog closes
       if (updateTimerRef.current) {
         clearTimeout(updateTimerRef.current);
         updateTimerRef.current = null;
@@ -357,12 +329,10 @@ export function ChatHistoryDialog({ open, onOpenChange, user }: ChatHistoryDialo
 
   useEffect(() => {
     if (open && inputRef.current) {
-      // Focus the search input after a small delay to ensure the dialog is fully rendered
       focusTimeoutRef.current = setTimeout(() => {
         inputRef.current?.focus();
-      }, FOCUS_DELAY);
+      }, FOCUS_DELAY_MS);
     }
-    // Reset search query when dialog opens
     if (open) {
       setSearchQuery('');
       setSearchMode('all');
@@ -376,19 +346,14 @@ export function ChatHistoryDialog({ open, onOpenChange, user }: ChatHistoryDialo
     };
   }, [open]);
 
-  // Periodic update for real-time timestamps
   useEffect(() => {
     if (!open) return;
 
     const updateTimes = () => {
-      // Force a re-render to update the displayed times
       forceUpdate({});
-
-      // Schedule next update
-      updateTimerRef.current = setTimeout(updateTimes, 30000); // Update every 30 seconds
+      updateTimerRef.current = setTimeout(updateTimes, 30000);
     };
 
-    // Start the update cycle
     updateTimerRef.current = setTimeout(updateTimes, 30000);
 
     return () => {
@@ -399,24 +364,20 @@ export function ChatHistoryDialog({ open, onOpenChange, user }: ChatHistoryDialo
     };
   }, [open]);
 
-  // Filter chats based on search query and mode with memoization
   const filteredChats = useMemo(() => {
     return allChats.filter((chat) => advancedSearch(chat, searchQuery, searchMode));
   }, [allChats, searchQuery, searchMode]);
 
-  // Categorize filtered chats with memoization
   const categorizedChats = useMemo(() => {
     return categorizeChatsByDate(filteredChats);
   }, [filteredChats]);
 
-  // Explicitly refetch when dialog opens
   useEffect(() => {
     if (open && user?.id) {
       refetch();
     }
-  }, [open, user?.id, refetch]);
+  }, [open, user?.id, organizationId, refetch]);
 
-  // Listen for cache invalidation events
   useEffect(() => {
     const handleCacheInvalidation = () => {
       if (user?.id) {
@@ -430,15 +391,13 @@ export function ChatHistoryDialog({ open, onOpenChange, user }: ChatHistoryDialo
     };
   }, [user?.id, refetch]);
 
-  // Handle mutations with React Query
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       await deleteChat(id);
     },
     onSuccess: (_, id) => {
       toast.success('Chat deleted');
-      // Update cache after successful deletion
-      queryClient.setQueryData(['chats', user?.id], (oldData: any) => {
+      queryClient.setQueryData(['chats', user?.id, organizationId], (oldData: any) => {
         if (!oldData) return oldData;
         return {
           ...oldData,
@@ -452,7 +411,7 @@ export function ChatHistoryDialog({ open, onOpenChange, user }: ChatHistoryDialo
     onError: (error) => {
       console.error('Failed to delete chat:', error);
       toast.error('Failed to delete chat. Please try again.');
-      queryClient.invalidateQueries({ queryKey: ['chats', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['chats', user?.id, organizationId] });
     },
   });
 
@@ -463,8 +422,7 @@ export function ChatHistoryDialog({ open, onOpenChange, user }: ChatHistoryDialo
     onSuccess: (updatedChat, { id, title }) => {
       if (updatedChat) {
         toast.success('Title updated');
-        // Update cache after successful title update
-        queryClient.setQueryData(['chats', user?.id], (oldData: any) => {
+        queryClient.setQueryData(['chats', user?.id, organizationId], (oldData: any) => {
           if (!oldData) return oldData;
           return {
             ...oldData,
@@ -484,13 +442,11 @@ export function ChatHistoryDialog({ open, onOpenChange, user }: ChatHistoryDialo
     },
   });
 
-  // Infinite scroll handler
   const handleScroll = useCallback(
     (e: React.UIEvent<HTMLDivElement>) => {
       const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
       const scrolledPercentage = (scrollTop + clientHeight) / scrollHeight;
 
-      // Load more when user scrolls to threshold
       if (scrolledPercentage > SCROLL_THRESHOLD && hasNextPage && !isFetchingNextPage && !isLoading) {
         fetchNextPage();
       }
@@ -498,7 +454,6 @@ export function ChatHistoryDialog({ open, onOpenChange, user }: ChatHistoryDialo
     [hasNextPage, isFetchingNextPage, isLoading, fetchNextPage],
   );
 
-  // Intersection Observer for more precise infinite scroll with proper cleanup
   useEffect(() => {
     const currentTrigger = loadMoreTriggerRef.current;
     const currentList = listRef.current;
@@ -526,7 +481,6 @@ export function ChatHistoryDialog({ open, onOpenChange, user }: ChatHistoryDialo
     };
   }, [hasNextPage, isFetchingNextPage, isLoading, fetchNextPage]);
 
-  // prefetch chats
   useEffect(() => {
     if (open) {
       allChats.forEach((chat) => {
@@ -536,7 +490,6 @@ export function ChatHistoryDialog({ open, onOpenChange, user }: ChatHistoryDialo
     }
   }, [open, allChats, router]);
 
-  // Handle chat selection
   const handleSelectChat = useCallback(
     (id: string, title: string) => {
       setNavigating(id);
@@ -549,14 +502,12 @@ export function ChatHistoryDialog({ open, onOpenChange, user }: ChatHistoryDialo
     [onOpenChange],
   );
 
-  // Handle chat deletion with inline confirmation
   const handleDeleteChat = useCallback((e: React.MouseEvent | KeyboardEvent, id: string, title: string) => {
     e.stopPropagation();
     console.log('SETTING DELETING CHAT ID:', id);
     setDeletingChatId(id);
   }, []);
 
-  // Confirm deletion with improved logic
   const confirmDeleteChat = useCallback(
     async (e: React.MouseEvent, id: string) => {
       e.stopPropagation();
@@ -565,13 +516,10 @@ export function ChatHistoryDialog({ open, onOpenChange, user }: ChatHistoryDialo
       try {
         await deleteMutation.mutateAsync(id);
 
-        // Smart redirect logic: only redirect to home if deleting current chat
         if (currentChatId === id) {
           redirect('/');
         }
-        // If not current chat, stay in the dialog
       } catch (error) {
-        // Error handling is done in mutation callbacks, but we should reset state
         console.error('Delete chat error:', error);
         toast.error('Failed to delete chat. Please try again.');
       }
@@ -579,19 +527,16 @@ export function ChatHistoryDialog({ open, onOpenChange, user }: ChatHistoryDialo
     [deleteMutation, currentChatId],
   );
 
-  // Cancel deletion
   const cancelDeleteChat = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     console.log('CANCELING DELETION');
     setDeletingChatId(null);
   }, []);
 
-  // Handle chat title editing
   const handleEditTitle = useCallback(
     (e: React.MouseEvent | KeyboardEvent, id: string, currentTitle: string) => {
       e.stopPropagation();
 
-      // Prevent editing if chat is in deleting state
       if (deletingChatId === id) {
         console.warn('Cannot edit title while chat is in deleting state');
         return;
@@ -603,7 +548,6 @@ export function ChatHistoryDialog({ open, onOpenChange, user }: ChatHistoryDialo
     [deletingChatId],
   );
 
-  // Save edited title
   const saveEditedTitle = useCallback(
     async (e: React.MouseEvent | React.KeyboardEvent, id: string) => {
       e.stopPropagation();
@@ -623,21 +567,18 @@ export function ChatHistoryDialog({ open, onOpenChange, user }: ChatHistoryDialo
         setEditingChatId(null);
         setEditingTitle('');
       } catch (error) {
-        // Error handling is done in mutation callbacks
         console.error('Save title error:', error);
       }
     },
     [editingTitle, updateTitleMutation],
   );
 
-  // Cancel title editing
   const cancelEditTitle = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     setEditingChatId(null);
     setEditingTitle('');
   }, []);
 
-  // Handle key press in title input
   const handleTitleKeyPress = useCallback(
     (e: React.KeyboardEvent, id: string) => {
       if (e.key === 'Enter') {
@@ -649,7 +590,6 @@ export function ChatHistoryDialog({ open, onOpenChange, user }: ChatHistoryDialo
     [saveEditedTitle, cancelEditTitle],
   );
 
-  // Get search mode icon and label
   const getSearchModeInfo = (mode: SearchMode) => {
     switch (mode) {
       case 'title':
@@ -667,7 +607,6 @@ export function ChatHistoryDialog({ open, onOpenChange, user }: ChatHistoryDialo
   const currentModeInfo = getSearchModeInfo(searchMode);
   const IconComponent = currentModeInfo.icon;
 
-  // Function to cycle search modes
   const cycleSearchMode = useCallback(() => {
     const modes: SearchMode[] = ['all', 'title', 'date', 'visibility'];
     const currentIndex = modes.indexOf(searchMode);
@@ -676,7 +615,6 @@ export function ChatHistoryDialog({ open, onOpenChange, user }: ChatHistoryDialo
     setSearchMode(nextMode);
   }, [searchMode]);
 
-  // Helper function to render a chat item
   const renderChatItem = (chat: Chat, index: number) => {
     const isCurrentChat = currentChatId === chat.id;
     const isPublic = chat.visibility === 'public';
@@ -708,7 +646,6 @@ export function ChatHistoryDialog({ open, onOpenChange, user }: ChatHistoryDialo
         }
       >
         <div className="grid grid-cols-[auto_1fr_auto] w-full gap-3 items-center">
-          {/* Icon with visibility indicator */}
           <div className="flex items-center justify-center w-5 relative">
             {navigating === chat.id ? (
               <div
@@ -731,7 +668,6 @@ export function ChatHistoryDialog({ open, onOpenChange, user }: ChatHistoryDialo
             )}
           </div>
 
-          {/* Title - editable when in edit mode */}
           <div className="min-w-0 flex-1">
             {isEditing ? (
               <input
@@ -759,10 +695,8 @@ export function ChatHistoryDialog({ open, onOpenChange, user }: ChatHistoryDialo
             )}
           </div>
 
-          {/* Meta information and actions */}
           <div className="flex items-center gap-2 shrink-0">
             {isDeleting ? (
-              // Delete confirmation actions
               <>
                 <Button
                   variant="ghost"
@@ -789,7 +723,6 @@ export function ChatHistoryDialog({ open, onOpenChange, user }: ChatHistoryDialo
                 </Button>
               </>
             ) : isEditing ? (
-              // Edit confirmation actions
               <>
                 <Button
                   variant="ghost"
@@ -816,14 +749,11 @@ export function ChatHistoryDialog({ open, onOpenChange, user }: ChatHistoryDialo
                 </Button>
               </>
             ) : (
-              // Normal state actions
               <>
-                {/* Timestamp - more compact */}
                 <span className="text-xs text-muted-foreground whitespace-nowrap w-16 text-right">
                   {formatCompactTime(new Date(chat.createdAt))}
                 </span>
 
-                {/* Actions - contextual based on states */}
                 <Button
                   variant="ghost"
                   size="icon"
@@ -891,13 +821,11 @@ export function ChatHistoryDialog({ open, onOpenChange, user }: ChatHistoryDialo
     );
   };
 
-  // Redirect to sign in page
   const handleSignIn = () => {
     onOpenChange(false);
     redirect('/sign-in');
   };
 
-  // Show sign in prompt if user is not logged in
   if (!user) {
     return (
       <CommandDialog open={open} onOpenChange={onOpenChange}>
@@ -924,7 +852,6 @@ export function ChatHistoryDialog({ open, onOpenChange, user }: ChatHistoryDialo
     <>
       <CommandDialog open={open} onOpenChange={onOpenChange}>
         <div className="relative">
-          {/* Custom search input with mode indicator */}
           <div className="flex h-12 items-center gap-2 border-b px-3 pr-16 sm:pr-20">
             <IconComponent className="size-4 shrink-0 opacity-50" />
             <input
@@ -936,7 +863,6 @@ export function ChatHistoryDialog({ open, onOpenChange, user }: ChatHistoryDialo
               onKeyDown={(e) => {
                 if (e.key === 'Tab' && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
                   e.preventDefault();
-                  // Cycle through search modes only with plain Tab
                   cycleSearchMode();
                 }
               }}
@@ -1010,7 +936,6 @@ export function ChatHistoryDialog({ open, onOpenChange, user }: ChatHistoryDialo
                       );
                     })}
 
-                    {/* Infinite scroll trigger and loading indicator */}
                     {hasNextPage && (
                       <div ref={loadMoreTriggerRef} className="flex items-center justify-center py-2 px-3">
                         {isFetchingNextPage ? (
@@ -1057,7 +982,6 @@ export function ChatHistoryDialog({ open, onOpenChange, user }: ChatHistoryDialo
             )}
           </CommandList>
 
-          {/* Mobile hints */}
           <div className="block sm:hidden bottom-0 left-0 right-0 p-3 text-xs text-center text-muted-foreground border-t border-border bg-background/90">
             <div className="flex justify-center items-center gap-3">
               <span>Tap to open</span>
@@ -1068,10 +992,8 @@ export function ChatHistoryDialog({ open, onOpenChange, user }: ChatHistoryDialo
             </div>
           </div>
 
-          {/* Desktop keyboard shortcuts */}
           <div className="hidden sm:block bottom-0 left-0 right-0 p-3 text-xs text-center text-muted-foreground border-t border-border bg-background/90">
             <div className="flex justify-between items-center px-2">
-              {/* Important navigation shortcuts on the left */}
               <div className="flex items-center gap-4">
                 <span className="flex items-center gap-1.5">
                   <kbd className="rounded border px-1.5 py-0.5 bg-muted text-xs">⏎</kbd> open
@@ -1086,7 +1008,6 @@ export function ChatHistoryDialog({ open, onOpenChange, user }: ChatHistoryDialo
                 </span>
               </div>
 
-              {/* Less critical shortcuts on the right */}
               <div className="flex items-center gap-4">
                 <span className="text-muted-foreground/80">Click edit to rename • Click trash to delete</span>
                 <span className="flex items-center gap-1.5">
@@ -1101,7 +1022,6 @@ export function ChatHistoryDialog({ open, onOpenChange, user }: ChatHistoryDialo
   );
 }
 
-// Navigation Button component for navbar
 export function ChatHistoryButton({ onClickAction }: { onClickAction: () => void }) {
   return (
     <Tooltip>

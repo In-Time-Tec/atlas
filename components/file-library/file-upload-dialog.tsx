@@ -16,6 +16,7 @@ import {
 } from '@hugeicons/core-free-icons';
 
 import { useUploadFile } from '@/hooks/use-files';
+import { useCurrentOrganization } from '@/hooks/use-organization';
 import { formatBytes } from '@/lib/utils';
 
 interface FileUploadDialogProps {
@@ -35,6 +36,7 @@ export function FileUploadDialog({ onClose }: FileUploadDialogProps) {
   const [description, setDescription] = React.useState('');
   const [tags, setTags] = React.useState('');
 
+  const { organization } = useCurrentOrganization();
   const uploadFile = useUploadFile();
 
   const handleDragOver = React.useCallback((e: React.DragEvent) => {
@@ -102,6 +104,7 @@ export function FileUploadDialog({ onClose }: FileUploadDialogProps) {
                 .map((t) => t.trim())
                 .filter(Boolean)
             : undefined,
+          organizationId: organization?.id,
           onProgress: (progress) => {
             setFiles((prev) => prev.map((f, idx) => (idx === fileIndex ? { ...f, progress } : f)));
           },

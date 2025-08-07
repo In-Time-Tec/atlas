@@ -87,7 +87,7 @@ export function OrganizationSwitcher({ className }: { className?: string }) {
 
   return (
     <>
-      <DropdownMenu >
+      <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button
             role="combobox"
@@ -96,23 +96,27 @@ export function OrganizationSwitcher({ className }: { className?: string }) {
               'hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
               'focus-visible:ring-2',
               'data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground',
-              className
+              className,
             )}
             disabled={isLoading}
           >
-            {currentOrg ? <Building2 size={18} strokeWidth={1.5} className="shrink-0" /> : <User size={18} strokeWidth={1.5} className="shrink-0" />}
+            {currentOrg ? (
+              <Building2 size={18} strokeWidth={1.5} className="shrink-0" />
+            ) : (
+              <User size={18} strokeWidth={1.5} className="shrink-0" />
+            )}
             <span className="flex-1 truncate text-left">{displayName}</span>
             <ChevronsUpDown className="ml-auto h-4 w-4 shrink-0 opacity-50" />
           </button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent 
-          className="w-[90vw] sm:w-[16em] max-w-[16em] p-0 font-sans rounded-lg bg-popover z-40 border !shadow-none" 
+        <DropdownMenuContent
+          className="w-[90vw] sm:w-[16em] max-w-[16em] p-0 font-sans rounded-lg bg-popover z-40 border !shadow-none"
           align="start"
           side="bottom"
           sideOffset={4}
         >
-          <DropdownMenuItem 
-            onClick={() => handleSwitchOrganization(null)} 
+          <DropdownMenuItem
+            onClick={() => handleSwitchOrganization(null)}
             className="flex items-center justify-between px-2 m-1 text-xs transition-all duration-200 hover:bg-accent data-[selected=true]:bg-accent cursor-pointer"
           >
             <div className="flex items-center gap-2">
@@ -155,8 +159,8 @@ export function OrganizationSwitcher({ className }: { className?: string }) {
             </>
           )}
           <DropdownMenuSeparator />
-          <DropdownMenuItem 
-            onClick={() => setCreateDialogOpen(true)} 
+          <DropdownMenuItem
+            onClick={() => setCreateDialogOpen(true)}
             className="flex items-center gap-2 py-3 m-1 text-xs transition-all duration-200 hover:bg-accent cursor-pointer"
           >
             <Plus className="h-3 w-3" />

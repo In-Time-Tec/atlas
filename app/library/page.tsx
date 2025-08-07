@@ -7,8 +7,8 @@ import { AppSidebar } from '@/components/app-sidebar';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { PageHeader } from '@/components/page-header';
 import { useUserData } from '@/hooks/use-user-data';
-import { LibraryContent } from './library-content';
-import { LoadingSkeleton } from './loading-skeleton';
+import { LibraryContent } from '@/app/files/library-content';
+import { LoadingSkeleton } from '@/app/files/loading-skeleton';
 
 export default function LibraryPage() {
   const { user, subscriptionData, isProUser, isLoading } = useUserData();
