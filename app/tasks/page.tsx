@@ -219,9 +219,7 @@ export default function TaskPage() {
       </SidebarProvider>
     );
   }
-  if (!isProUser) {
-    return <ProUpgradeScreen user={user} isProUser={isProUser} isProStatusLoading={isProStatusLoading} />;
-  }
+  // Tasks are no longer gated behind Pro. Always render the Tasks UI for authenticated users.
 
   return (
     <SidebarProvider>

@@ -1548,9 +1548,7 @@ export async function createScheduledTask({
       throw new Error('Authentication required');
     }
 
-    if (!user.isProUser) {
-      throw new Error('Pro subscription required for scheduled searches');
-    }
+    // Tasks are now available to all users; no Pro check
 
     const { getUserWithOrganization } = await import('@/lib/auth-utils');
     const { activeOrganization } = await getUserWithOrganization();

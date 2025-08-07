@@ -308,7 +308,7 @@ export function FileAttachmentDialog({
           <DialogTitle>Attach Files</DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 flex flex-col space-y-4 overflow-hidden">
+        <div className="flex-1 min-h-0 flex flex-col space-y-4">
           <div className="flex items-center justify-between p-2 bg-muted/30 rounded-lg">
             <div className="flex items-center gap-2">
               <span className="text-xs text-muted-foreground">Library:</span>
@@ -331,8 +331,8 @@ export function FileAttachmentDialog({
             />
           </div>
 
-          <div className="flex-1 rounded-md border overflow-hidden">
-            <div className="relative h-[380px] overflow-auto">
+          <div className="flex-1 min-h-0 rounded-md border">
+            <div className="relative h-full overflow-auto p-1">
               <table className="w-full caption-bottom text-sm">
                 <thead className="[&_tr]:border-b sticky top-0 z-10 bg-background">
                   {table.getHeaderGroups().map((headerGroup) => (
