@@ -23,7 +23,8 @@ import { useAutoResume } from '@/hooks/use-auto-resume';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { useUsageData } from '@/hooks/use-usage-data';
 import { useUserData } from '@/hooks/use-user-data';
-import { useOptimizedScroll } from '@/hooks/use-optimized-scroll';
+import { ChatContainerRoot, ChatContainerContent, ChatContainerScrollAnchor } from '@/components/ui/chat-container';
+import { ScrollButton } from '@/components/ui/scroll-button';
 
 import { SEARCH_LIMITS } from '@/lib/constants';
 import { ChatSDKError } from '@/lib/errors';
@@ -100,19 +101,10 @@ const ChatInterface = memo(
     );
 
     const lastSubmittedQueryRef = useRef(initialState.query);
-    const bottomRef = useRef<HTMLDivElement>(null);
-    const scrollContainerRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null!);
     const inputRef = useRef<HTMLTextAreaElement>(null!);
     const initializedRef = useRef(false);
 
-    const { isAtBottom, hasManuallyScrolled, scrollToElement, resetManualScroll } = useOptimizedScroll(bottomRef, {
-      enabled: true,
-      threshold: 100,
-      behavior: 'smooth',
-      debounceMs: 50,
-      containerRef: scrollContainerRef,
-    });
 
     const { data: usageData, refetch: refetchUsage } = useUsageData(user || null);
 
@@ -362,24 +354,7 @@ const ChatInterface = memo(
       return -1;
     }, [messages]);
 
-    // Handle autoscroll when status changes to streaming
-    useEffect(() => {
-      if (status === 'streaming') {
-        resetManualScroll();
-      }
-    }, [status, resetManualScroll]);
-
-    // Handle autoscroll based on messages and streaming status
-    useEffect(() => {
-      // Always scroll if we're streaming and user hasn't manually scrolled
-      if (status === 'streaming' && !hasManuallyScrolled) {
-        scrollToElement();
-      }
-      // Also scroll if user is at bottom or hasn't manually scrolled
-      else if ((isAtBottom || !hasManuallyScrolled) && messages.length > 0) {
-        scrollToElement();
-      }
-    }, [messages, status, isAtBottom, hasManuallyScrolled, scrollToElement]);
+    // Auto-follow behavior handled by ChatContainerRoot (use-stick-to-bottom)
 
     useEffect(() => {
       dispatch({
@@ -466,15 +441,14 @@ const ChatInterface = memo(
         />
 
         <div className="flex-1 flex flex-col overflow-hidden">
-          <div
-            ref={scrollContainerRef}
+          <ChatContainerRoot
             className={cn(
-              'flex-1 overflow-auto font-sans! scroll-smooth bg-background text-foreground transition-all duration-500 w-full overflow-x-hidden !scrollbar-thin !scrollbar-thumb-muted-foreground dark:!scrollbar-thumb-muted-foreground !scrollbar-track-transparent hover:!scrollbar-thumb-foreground dark:!hover:scrollbar-thumb-foreground',
+              'relative flex-1 font-sans! scroll-smooth bg-background text-foreground transition-all duration-500 w-full overflow-x-hidden !scrollbar-thin !scrollbar-thumb-muted-foreground dark:!scrollbar-thumb-muted-foreground !scrollbar-track-transparent hover:!scrollbar-thumb-foreground dark:!hover:scrollbar-thumb-foreground',
               'flex flex-col',
               status === 'ready' && messages.length === 0 && 'justify-center',
             )}
           >
-            <div className={`w-full max-w-[95%] sm:max-w-2xl p-2 sm:p-4 space-y-6 mx-auto transition-all duration-300`}>
+            <ChatContainerContent className={`w-full max-w-[95%] sm:max-w-2xl p-2 sm:p-4 space-y-6 mx-auto transition-all duration-300`}>
               {status === 'ready' && messages.length === 0 && (
                 <div className="text-center m-0 mb-2">
                   <h1 className="text-3xl sm:text-5xl !mb-0 text-foreground dark:text-foreground font-be-vietnam-pro! font-light tracking-tighter">
@@ -555,9 +529,12 @@ const ChatInterface = memo(
                 />
               )}
 
-              <div ref={bottomRef} />
+              <ChatContainerScrollAnchor />
+            </ChatContainerContent>
+            <div className="absolute right-3 bottom-3 sm:right-4 sm:bottom-4">
+              <ScrollButton className="shadow-sm" />
             </div>
-          </div>
+          </ChatContainerRoot>
 
           {((user && isOwner) || !initialChatId || (!user && chatState.selectedVisibilityType === 'private')) &&
             !isLimitBlocked && (
