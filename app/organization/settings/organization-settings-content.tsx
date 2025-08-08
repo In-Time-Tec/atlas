@@ -65,6 +65,13 @@ export function OrganizationSettingsContent({ organization, isOwner, isAdmin }: 
   const [isUploadingLogo, setIsUploadingLogo] = React.useState(false);
   const [uploadError, setUploadError] = React.useState<string | null>(null);
   const logoFileInputRef = React.useRef<HTMLInputElement>(null);
+
+  // Track last-saved values so we can disable the save button immediately after saving
+  const [baseline, setBaseline] = React.useState<{ name: string; slug: string; logo: string | null }>(() => ({
+    name: organization.name,
+    slug: organization.slug,
+    logo: organization.logo || null,
+  }));
   const [inviteEmail, setInviteEmail] = React.useState('');
   const [inviteRole, setInviteRole] = React.useState<'member' | 'admin' | 'owner'>('member');
   const [isInviteDialogOpen, setIsInviteDialogOpen] = React.useState(false);
@@ -97,6 +104,8 @@ export function OrganizationSettingsContent({ organization, isOwner, isAdmin }: 
     setInviteEmail('');
     setInviteRole('member');
     setIsInviteDialogOpen(false);
+    // When organization prop changes (e.g., after refetch), sync the baseline as the new saved state
+    setBaseline({ name: organization.name, slug: organization.slug, logo: organization.logo || null });
   }, [organization.id, organization.name, organization.slug, organization.logo]);
 
   const handleUpdateOrganization = React.useCallback(() => {
@@ -118,7 +127,15 @@ export function OrganizationSettingsContent({ organization, isOwner, isAdmin }: 
       data.logo = orgLogo ?? '';
     }
 
-    updateOrganization.mutate({ organizationId: organization.id, data });
+    updateOrganization.mutate(
+      { organizationId: organization.id, data },
+      {
+        onSuccess: () => {
+          // Optimistically mark current values as saved so the Save button disables immediately
+          setBaseline({ name: orgName, slug: orgSlug, logo: orgLogo ?? null });
+        },
+      },
+    );
   }, [orgName, orgSlug, orgLogo, organization.id, organization.logo, updateOrganization]);
 
   const handleLogoFileChange = React.useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -188,7 +205,7 @@ export function OrganizationSettingsContent({ organization, isOwner, isAdmin }: 
   }, [inviteEmail, inviteRole, organization.id, inviteMember]);
 
   const hasUnsavedChanges =
-    orgName !== organization.name || orgSlug !== organization.slug || (orgLogo ?? '') !== (organization.logo ?? '');
+    orgName !== baseline.name || orgSlug !== baseline.slug || (orgLogo ?? '') !== (baseline.logo ?? '');
 
   const handleSafeRemoveMember = React.useCallback(
     (memberId: string) => {
@@ -295,7 +312,7 @@ export function OrganizationSettingsContent({ organization, isOwner, isAdmin }: 
           {isAdmin && (
             <div className="flex justify-end">
               <Button onClick={handleUpdateOrganization} disabled={!hasUnsavedChanges || updateOrganization.isPending}>
-                {updateOrganization.isPending ? 'Saving…' : 'Save Changes'}
+                {updateOrganization.isPending ? 'Saving…' : 'Save'}
               </Button>
             </div>
           )}
