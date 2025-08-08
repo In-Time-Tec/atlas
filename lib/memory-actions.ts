@@ -4,10 +4,12 @@ import { getUser } from '@/lib/auth-utils';
 import { serverEnv } from '@/env/server';
 import MemoryClient from 'mem0ai';
 
-// Initialize the memory client with API key
 const memoryClient = new MemoryClient({ apiKey: serverEnv.MEM0_API_KEY || '' });
 
-// Define the types based on actual API responses
+function isMem0Configured(): boolean {
+  return Boolean(serverEnv.MEM0_API_KEY && serverEnv.MEM0_ORG_ID && serverEnv.MEM0_PROJECT_ID);
+}
+
 export interface MemoryItem {
   id: string;
   name?: string;
@@ -40,6 +42,10 @@ export async function addMemory(content: string) {
   }
 
   try {
+    if (!isMem0Configured()) {
+      console.warn('[mem0] Skipping addMemory: MEM0 configuration missing');
+      return { success: false, error: 'Memories are not configured' } as any;
+    }
     const response = await memoryClient.add(
       [
         {
@@ -54,8 +60,12 @@ export async function addMemory(content: string) {
       },
     );
     return response;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error adding memory:', error);
+    // Gracefully degrade on invalid key or 401s
+    if (error && typeof error.message === 'string' && error.message.includes('API request failed')) {
+      return { success: false, error: 'Memories are temporarily unavailable' } as any;
+    }
     throw error;
   }
 }
@@ -80,6 +90,10 @@ export async function searchMemories(query: string, page = 1, pageSize = 20): Pr
   };
 
   try {
+    if (!isMem0Configured()) {
+      console.warn('[mem0] Skipping searchMemories: MEM0 configuration missing');
+      return { memories: [], total: 0 };
+    }
     const result = await memoryClient.search(query, {
       filters: searchFilters,
       api_version: 'v2',
@@ -131,9 +145,10 @@ export async function searchMemories(query: string, page = 1, pageSize = 20): Pr
       };
     }
     return { memories: [], total: 0 };
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error searching memories:', error);
-    throw error;
+    // Graceful fallback for invalid/expired API key
+    return { memories: [], total: 0 };
   }
 }
 
@@ -149,6 +164,10 @@ export async function getAllMemories(page = 1, pageSize = 20): Promise<MemoryRes
   }
 
   try {
+    if (!isMem0Configured()) {
+      console.warn('[mem0] Skipping getAllMemories: MEM0 configuration missing');
+      return { memories: [], total: 0 };
+    }
     const data = await memoryClient.getAll({
       user_id: user.id,
       org_id: serverEnv.MEM0_ORG_ID,
@@ -197,9 +216,10 @@ export async function getAllMemories(page = 1, pageSize = 20): Promise<MemoryRes
       };
     }
     return { memories: [], total: 0 };
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error getting all memories:', error);
-    throw error;
+    // Graceful fallback for invalid/expired API key
+    return { memories: [], total: 0 };
   }
 }
 
@@ -214,10 +234,14 @@ export async function deleteMemory(memoryId: string) {
   }
 
   try {
+    if (!isMem0Configured()) {
+      console.warn('[mem0] Skipping deleteMemory: MEM0 configuration missing');
+      return { success: false } as any;
+    }
     const data = await memoryClient.delete(memoryId);
     return data;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error deleting memory:', error);
-    throw error;
+    return { success: false } as any;
   }
 }

@@ -4,7 +4,10 @@ import { db } from '@/lib/db';
 import { organizationMember, user } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
 
-export async function GET(request: Request, { params }: { params: { organizationId: string } }) {
+export async function GET(
+  request: Request,
+  context: { params: Promise<{ organizationId: string }> },
+) {
   try {
     const session = await auth.api.getSession({
       headers: request.headers,
@@ -14,7 +17,7 @@ export async function GET(request: Request, { params }: { params: { organization
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { organizationId } = params;
+    const { organizationId } = await context.params;
 
     if (!organizationId) {
       return NextResponse.json({ error: 'Organization ID is required' }, { status: 400 });
