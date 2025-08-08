@@ -336,7 +336,7 @@ export function MembersTable({
             Discard
           </Button>
           <Button size="sm" onClick={saveChanges} disabled={!hasChanges} className="h-8">
-            Save changes
+            Save
           </Button>
         </div>
       </div>
