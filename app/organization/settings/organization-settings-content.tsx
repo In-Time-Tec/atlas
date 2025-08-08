@@ -4,6 +4,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -60,6 +61,10 @@ export function OrganizationSettingsContent({ organization, isOwner, isAdmin }: 
   const router = useRouter();
   const [orgName, setOrgName] = React.useState(organization.name);
   const [orgSlug, setOrgSlug] = React.useState(organization.slug);
+  const [orgLogo, setOrgLogo] = React.useState<string | null>(organization.logo || null);
+  const [isUploadingLogo, setIsUploadingLogo] = React.useState(false);
+  const [uploadError, setUploadError] = React.useState<string | null>(null);
+  const logoFileInputRef = React.useRef<HTMLInputElement>(null);
   const [inviteEmail, setInviteEmail] = React.useState('');
   const [inviteRole, setInviteRole] = React.useState<'member' | 'admin' | 'owner'>('member');
   const [isInviteDialogOpen, setIsInviteDialogOpen] = React.useState(false);
@@ -88,10 +93,11 @@ export function OrganizationSettingsContent({ organization, isOwner, isAdmin }: 
   React.useEffect(() => {
     setOrgName(organization.name);
     setOrgSlug(organization.slug);
+    setOrgLogo(organization.logo || null);
     setInviteEmail('');
     setInviteRole('member');
     setIsInviteDialogOpen(false);
-  }, [organization.id, organization.name, organization.slug]);
+  }, [organization.id, organization.name, organization.slug, organization.logo]);
 
   const handleUpdateOrganization = React.useCallback(() => {
     if (!orgName.trim()) {
@@ -104,14 +110,42 @@ export function OrganizationSettingsContent({ organization, isOwner, isAdmin }: 
       return;
     }
 
-    updateOrganization.mutate({
-      organizationId: organization.id,
-      data: {
-        name: orgName,
-        slug: orgSlug,
-      },
-    });
-  }, [orgName, orgSlug, organization.id, updateOrganization]);
+    const data: { name?: string; slug?: string; logo?: string } = {
+      name: orgName,
+      slug: orgSlug,
+    };
+    if ((orgLogo ?? '') !== (organization.logo ?? '')) {
+      data.logo = orgLogo ?? '';
+    }
+
+    updateOrganization.mutate({ organizationId: organization.id, data });
+  }, [orgName, orgSlug, orgLogo, organization.id, organization.logo, updateOrganization]);
+
+  const handleLogoFileChange = React.useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadError(null);
+    setIsUploadingLogo(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('organizationId', organization.id);
+      const res = await fetch('/api/files', { method: 'POST', body: formData });
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || 'Upload failed');
+      }
+      const payload = await res.json();
+      setOrgLogo(payload.url as string);
+    } catch (err: any) {
+      const message = err?.message || 'Upload failed';
+      setUploadError(message);
+      toast.error(message);
+    } finally {
+      setIsUploadingLogo(false);
+      if (logoFileInputRef.current) logoFileInputRef.current.value = '';
+    }
+  }, [organization.id]);
 
   const handleDeleteOrganization = React.useCallback(() => {
     deleteOrganization.mutate(organization.id, {
@@ -153,7 +187,8 @@ export function OrganizationSettingsContent({ organization, isOwner, isAdmin }: 
     );
   }, [inviteEmail, inviteRole, organization.id, inviteMember]);
 
-  const hasUnsavedChanges = orgName !== organization.name || orgSlug !== organization.slug;
+  const hasUnsavedChanges =
+    orgName !== organization.name || orgSlug !== organization.slug || (orgLogo ?? '') !== (organization.logo ?? '');
 
   const handleSafeRemoveMember = React.useCallback(
     (memberId: string) => {
@@ -221,6 +256,40 @@ export function OrganizationSettingsContent({ organization, isOwner, isAdmin }: 
               disabled={!isAdmin}
             />
             <p className="text-xs text-muted-foreground">Used in URLs. Lowercase letters, numbers, and hyphens only.</p>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Organization Logo</Label>
+            <div className="flex items-center gap-4">
+              <Avatar className="h-12 w-12">
+                <AvatarImage src={orgLogo || ''} alt={orgName} />
+                <AvatarFallback>{(orgName?.[0] || 'O').toUpperCase()}</AvatarFallback>
+              </Avatar>
+              <div className="flex items-center gap-2">
+                <input
+                  ref={logoFileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleLogoFileChange}
+                  disabled={!isAdmin || isUploadingLogo}
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => logoFileInputRef.current?.click()}
+                  disabled={!isAdmin || isUploadingLogo}
+                >
+                  {isUploadingLogo ? 'Uploading…' : 'Upload Logo'}
+                </Button>
+                {orgLogo && (
+                  <Button variant="ghost" size="sm" onClick={() => setOrgLogo(null)} disabled={!isAdmin}>
+                    Remove
+                  </Button>
+                )}
+              </div>
+            </div>
+            {uploadError && <p className="text-xs text-destructive">{uploadError}</p>}
           </div>
 
           {isAdmin && (
