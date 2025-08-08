@@ -450,10 +450,12 @@ const ChatInterface = memo(
           >
             <ChatContainerContent className={`w-full max-w-[95%] sm:max-w-2xl p-2 sm:p-4 space-y-6 mx-auto transition-all duration-300`}>
               {status === 'ready' && messages.length === 0 && (
-                <div className="text-center m-0 mb-2">
-                  <h1 className="text-3xl sm:text-5xl !mb-0 text-foreground dark:text-foreground font-be-vietnam-pro! font-light tracking-tighter">
-                    atlas
-                  </h1>
+                <div className="min-h-[60vh] flex items-center justify-center">
+                  <div className="text-center m-0">
+                    <h1 className="text-3xl sm:text-5xl !mb-0 text-foreground dark:text-foreground font-be-vietnam-pro! font-light tracking-tighter">
+                      Atlas
+                    </h1>
+                  </div>
                 </div>
               )}
 
