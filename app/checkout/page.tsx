@@ -18,7 +18,7 @@ import { useLocation } from '@/hooks/use-location';
 import { useSession } from '@/lib/auth-client';
 import { useIsProUser } from '@/hooks/use-user-data';
 import { PRICING } from '@/lib/constants';
-import { getDiscountConfigAction } from '@/app/actions';
+import { getDiscountConfigAction } from '@/lib/actions/billing';
 import { DiscountConfig } from '@/lib/discount';
 
 const checkoutSchema = z.object({

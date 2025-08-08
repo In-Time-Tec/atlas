@@ -1,4 +1,4 @@
-import { generateTitleFromUserMessage, getGroupConfig } from '@/app/actions';
+import { generateTitleFromUserMessage, getGroupConfig } from '@/lib/actions/search';
 import {
   convertToCoreMessages,
   streamText,

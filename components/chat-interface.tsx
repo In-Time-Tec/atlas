@@ -12,7 +12,8 @@ import { parseAsString, useQueryState } from 'nuqs';
 import { toast } from 'sonner';
 import { v4 as uuidv4 } from 'uuid';
 
-import { suggestQuestions, updateChatVisibility } from '@/app/actions';
+import { suggestQuestions } from '@/lib/actions/search';
+import { updateChatVisibility } from '@/lib/actions/chat';
 
 import { ChatDialogs } from '@/components/chat-dialogs';
 import Messages from '@/components/messages';

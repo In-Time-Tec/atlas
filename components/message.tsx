@@ -27,7 +27,7 @@ import {
 import { TextUIPart, ReasoningUIPart, ToolInvocationUIPart, SourceUIPart, StepStartUIPart } from '@ai-sdk/ui-utils';
 import { MarkdownRenderer, preprocessLaTeX } from '@/components/markdown';
 import { ChatTextHighlighter } from '@/components/chat-text-highlighter';
-import { deleteTrailingMessages } from '@/app/actions';
+import { deleteTrailingMessages } from '@/lib/actions/chat';
 import { getErrorActions, getErrorIcon, isSignInRequired, isProRequired, isRateLimited } from '@/lib/errors';
 import { PlusCircle, User } from '@phosphor-icons/react';
 import { HugeiconsIcon } from '@hugeicons/react';

@@ -13,15 +13,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useMediaQuery } from '@/hooks/use-media-query';
-import {
-  getUserMessageCount,
-  getSubDetails,
-  getExtremeSearchUsageCount,
-  getHistoricalUsage,
-  getCustomInstructions,
-  saveCustomInstructions,
-  deleteCustomInstructionsAction,
-} from '@/app/actions';
+import { getUserMessageCount, getExtremeSearchUsageCount, getHistoricalUsage } from '@/lib/actions/search';
+import { getSubDetails } from '@/lib/actions/billing';
+import { getCustomInstructions, saveCustomInstructions, deleteCustomInstructionsAction } from '@/lib/actions/custom-instructions';
 import { SEARCH_LIMITS } from '@/lib/constants';
 import { authClient, betterauthClient } from '@/lib/auth-client';
 import {

@@ -11,7 +11,7 @@ import Link from 'next/link';
 import { SEARCH_LIMITS, PRICING } from '@/lib/constants';
 import { TASK_LIMITS } from '@/app/tasks/constants';
 import { DiscountBanner } from '@/components/ui/discount-banner';
-import { getDiscountConfigAction } from '@/app/actions';
+import { getDiscountConfigAction } from '@/lib/actions/billing';
 import { DiscountConfig } from '@/lib/discount';
 import { SlidingNumber } from '@/components/core/sliding-number';
 import { useLocation } from '@/hooks/use-location';

@@ -8,7 +8,7 @@ import { RefreshCw, AlertCircle } from 'lucide-react';
 import { MarkdownRenderer } from '@/components/markdown';
 import { ChatTextHighlighter } from '@/components/chat-text-highlighter';
 import ToolInvocationListView from '@/components/tool-invocation-list-view';
-import { deleteTrailingMessages } from '@/app/actions';
+import { deleteTrailingMessages } from '@/lib/actions/chat';
 import { toast } from 'sonner';
 import { Share, ShareIcon, CopyIcon } from '@phosphor-icons/react';
 import { EnhancedErrorDisplay } from '@/components/message';

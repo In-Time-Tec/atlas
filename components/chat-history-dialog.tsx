@@ -39,7 +39,8 @@ import {
   differenceInMonths,
   differenceInYears,
 } from 'date-fns';
-import { deleteChat, getUserChats, loadMoreChats, updateChatTitle } from '@/app/actions';
+import { getUserChats, loadMoreChats } from '@/lib/actions/search';
+import { deleteChat, updateChatTitle } from '@/lib/actions/chat';
 import { Button } from './ui/button';
 import { toast } from 'sonner';
 import { User } from '@/lib/db/schema';

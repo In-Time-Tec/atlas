@@ -1,7 +1,7 @@
 // Force dynamic rendering to access headers
 export const dynamic = 'force-dynamic';
 
-import { getCurrentUser } from '@/app/actions';
+import { getCurrentUser } from '@/lib/actions/org';
 import PricingTable from './_component/pricing-table';
 
 export default async function PricingPage() {

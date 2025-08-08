@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { getOrganizationContext } from '@/app/actions';
+import { getOrganizationContext } from '@/lib/actions/org';
 
 export function useOrganizationContext() {
   const {

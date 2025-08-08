@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { getCurrentUser } from '@/app/actions';
+import { getCurrentUser } from '@/lib/actions/org';
 import { type ComprehensiveUserData } from '@/lib/user-data';
 import { shouldBypassRateLimits } from '@/ai/providers';
 

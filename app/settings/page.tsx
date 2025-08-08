@@ -22,15 +22,9 @@ import { PageHeader } from '@/components/page-header'
 import { useCurrentOrganization, useOrganizationRole } from '@/hooks/use-organization'
 import { OrganizationSettingsContent } from '@/app/organization/settings/organization-settings-content'
 import { OrganizationSettingsSkeleton } from '@/app/organization/settings/loading-skeleton'
-import {
-  getUserMessageCount,
-  getSubDetails,
-  getExtremeSearchUsageCount,
-  getHistoricalUsage,
-  getCustomInstructions,
-  saveCustomInstructions,
-  deleteCustomInstructionsAction,
-} from '@/app/actions'
+import { getUserMessageCount, getExtremeSearchUsageCount, getHistoricalUsage } from '@/lib/actions/search'
+import { getSubDetails } from '@/lib/actions/billing'
+import { getCustomInstructions, saveCustomInstructions, deleteCustomInstructionsAction } from '@/lib/actions/custom-instructions'
 import { SEARCH_LIMITS } from '@/lib/constants'
 import { authClient, betterauthClient } from '@/lib/auth-client'
 import { getAllMemories, searchMemories, deleteMemory, type MemoryItem } from '@/lib/memory-actions'

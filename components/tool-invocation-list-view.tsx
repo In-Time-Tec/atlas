@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils';
 import { ArrowUpRight, LucideIcon, User2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import Link from 'next/link';
-import { generateSpeech } from '@/app/actions';
+import { generateSpeech } from '@/lib/actions/media';
 import Image from 'next/image';
 import MemoryManager from '@/components/memory-manager';
 

@@ -2,7 +2,7 @@ import { tool } from 'ai';
 import { z } from 'zod';
 import MemoryClient from 'mem0ai';
 import { serverEnv } from '@/env/server';
-import { getCurrentUser } from '@/app/actions';
+import { getCurrentUser } from '@/lib/actions/org';
 
 export const memoryManagerTool = tool({
   description: 'Manage personal memories with add and search operations.',

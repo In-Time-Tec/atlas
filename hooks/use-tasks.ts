@@ -10,7 +10,7 @@ import {
   updateTaskAction,
   deleteTaskAction,
   testTaskAction,
-} from '@/app/actions';
+} from '@/lib/actions/tasks';
 import { useCurrentOrganization } from './use-organization';
 
 interface Task {
