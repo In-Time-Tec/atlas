@@ -280,7 +280,7 @@ const UserProfile = memo(
 
             <DropdownMenuItem className="cursor-pointer" asChild>
               <a
-                href={'https://api.atlas.ai/'}
+                href={process.env.NEXT_PUBLIC_ATLAS_API_BASE_URL || '#'}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full flex items-center gap-2"

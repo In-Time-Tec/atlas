@@ -73,7 +73,8 @@ const PREVIEW_IMAGE_COUNT = 5;
 const getFaviconUrl = (url: string) => {
   try {
     const domain = new URL(url).hostname;
-    return `https://www.google.com/s2/favicons?sz=128&domain=${domain}`;
+    const tmpl = process.env.NEXT_PUBLIC_GOOGLE_FAVICON_URL || 'https://www.google.com/s2/favicons?sz=128&domain={domain}';
+    return tmpl.replace('{domain}', domain);
   } catch {
     return null;
   }

@@ -183,7 +183,7 @@ export async function createScheduledTask({
 
           if (delay > 0) {
             await qstash.publish({
-              url: `https://scira.ai/api/tasks`,
+              url: serverEnv.SCIRA_TASKS_ENDPOINT || `https://scira.ai/api/tasks`,
               body: JSON.stringify({
                 taskId: task.id,
                 prompt,
@@ -199,7 +199,7 @@ export async function createScheduledTask({
           }
         } else {
           const scheduleResponse = await qstash.schedules.create({
-            destination: `https://scira.ai/api/tasks`,
+            destination: serverEnv.SCIRA_TASKS_ENDPOINT || `https://scira.ai/api/tasks`,
             method: "POST",
             cron: cronSchedule,
             body: JSON.stringify({
@@ -375,7 +375,7 @@ export async function updateTaskAction({
         await qstash.schedules.delete(task.qstashScheduleId);
 
         const scheduleResponse = await qstash.schedules.create({
-          destination: `https://scira.ai/api/tasks`,
+          destination: serverEnv.SCIRA_TASKS_ENDPOINT || `https://scira.ai/api/tasks`,
           method: "POST",
           cron: cronSchedule,
           body: JSON.stringify({
@@ -467,7 +467,7 @@ export async function testTaskAction({ id }: { id: string }) {
       throw new Error(`Cannot test task with status: ${task.status}`);
     }
 
-    const response = await fetch("https://scira.ai/api/tasks", {
+    const response = await fetch(serverEnv.SCIRA_TASKS_ENDPOINT || "https://scira.ai/api/tasks", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

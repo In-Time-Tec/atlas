@@ -121,7 +121,7 @@ export const auth = betterAuth({
         },
       },
       sendInvitationEmail: async (data, request) => {
-        const baseUrl = process.env.NODE_ENV === 'production' ? 'https://atlas.ai' : 'http://localhost:3000';
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || serverEnv.APP_URL || 'http://localhost:3000';
         const invitationUrl = `${baseUrl}/organization/accept-invitation?id=${data.invitation.id}`;
         const inviterName = data.inviter.user.name || data.inviter.user.email;
 
@@ -443,6 +443,6 @@ export const auth = betterAuth({
     }),
     nextCookies(),
   ],
-  trustedOrigins: ['https://localhost:3000', 'https://atlas.ai', 'https://www.atlas.ai'],
-  allowedOrigins: ['https://localhost:3000', 'https://atlas.ai', 'https://www.atlas.ai'],
+  trustedOrigins: (serverEnv.ALLOWED_ORIGINS || '').split(',').map((s) => s.trim()).filter(Boolean),
+  allowedOrigins: (serverEnv.ALLOWED_ORIGINS || '').split(',').map((s) => s.trim()).filter(Boolean),
 });

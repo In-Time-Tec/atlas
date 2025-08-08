@@ -13,7 +13,7 @@ import { Toaster } from 'sonner';
 import { Providers } from './providers';
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://atlas.ai'),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'),
   title: {
     default: 'Atlas AI',
     template: '%s | Atlas AI',
@@ -21,11 +21,11 @@ export const metadata: Metadata = {
   },
   description: 'Atlas AI is a minimalistic AI-powered search engine that helps you find information on the internet.',
   openGraph: {
-    url: 'https://atlas.ai',
+    url: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
     siteName: 'Atlas AI',
   },
   keywords: [
-    'atlas.ai',
+    (process.env.NEXT_PUBLIC_APP_URL ? new URL(process.env.NEXT_PUBLIC_APP_URL).host : 'localhost:3000'),
     'perplexity alternative',
     'ai search engine',
     'search engine',

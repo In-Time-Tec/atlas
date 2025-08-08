@@ -214,7 +214,9 @@ const PlaceCard: React.FC<PlaceCardProps> = ({ place, onClick, isSelected = fals
             onClick={(e) => {
               e.stopPropagation();
               window.open(
-                `https://www.google.com/maps/dir/?api=1&destination=${place.location.lat},${place.location.lng}`,
+                (process.env.NEXT_PUBLIC_GOOGLE_MAPS_DIR_URL_TEMPLATE || 'https://www.google.com/maps/dir/?api=1&destination={lat},{lng}')
+                  .replace('{lat}', String(place.location.lat))
+                  .replace('{lng}', String(place.location.lng)),
                 '_blank',
               );
             }}
@@ -254,7 +256,11 @@ const PlaceCard: React.FC<PlaceCardProps> = ({ place, onClick, isSelected = fals
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                window.open(`https://www.google.com/maps/place/?q=place_id:${place.place_id}`, '_blank');
+                window.open(
+                  (process.env.NEXT_PUBLIC_GOOGLE_MAPS_PLACE_URL_TEMPLATE || 'https://www.google.com/maps/place/?q=place_id:{place_id}')
+                    .replace('{place_id}', place.place_id),
+                  '_blank',
+                );
               }}
               className="inline-flex items-center gap-1.5 px-2 py-1 text-xs font-medium text-neutral-700 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-neutral-100 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-full border border-neutral-200 dark:border-neutral-700 transition-colors"
             >

@@ -588,7 +588,8 @@ export const InteractiveStockChart = React.memo(
                             <div className="flex items-center gap-1">
                               <div className="relative w-3 h-3 rounded-sm bg-muted/50 flex items-center justify-center overflow-hidden">
                                 <img
-                                  src={`https://www.google.com/s2/favicons?sz=128&domain=${new URL(news.url).hostname}`}
+                                  src={(process.env.NEXT_PUBLIC_GOOGLE_FAVICON_URL || 'https://www.google.com/s2/favicons?sz=128&domain={domain}')
+                                    .replace('{domain}', new URL(news.url).hostname)}
                                   alt=""
                                   className="w-3 h-3 object-contain"
                                   onError={(e) => {
@@ -661,9 +662,8 @@ export const InteractiveStockChart = React.memo(
                               <div className="flex items-center gap-1">
                                 <div className="relative w-3 h-3 rounded-sm bg-muted/50 flex items-center justify-center overflow-hidden">
                                   <img
-                                    src={`https://www.google.com/s2/favicons?sz=128&domain=${
-                                      new URL(news.url).hostname
-                                    }`}
+                                    src={(process.env.NEXT_PUBLIC_GOOGLE_FAVICON_URL || 'https://www.google.com/s2/favicons?sz=128&domain={domain}')
+                                      .replace('{domain}', new URL(news.url).hostname)}
                                     alt=""
                                     className="w-3 h-3 object-contain"
                                     onError={(e) => {

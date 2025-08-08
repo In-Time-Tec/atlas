@@ -48,12 +48,12 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     description: 'A search in atlas.ai',
     openGraph: {
       title: title,
-      url: `https://atlas.ai/${id}`,
+      url: `${process.env.NEXT_PUBLIC_APP_URL}/${id}`,
       description: 'A search in atlas.ai',
       siteName: 'atlas.ai',
       images: [
         {
-          url: `https://atlas.ai/api/og/chat/${id}`,
+          url: `${process.env.NEXT_PUBLIC_OG_CHAT_URL_TEMPLATE?.replace('{id}', id) || `${process.env.NEXT_PUBLIC_APP_URL}/api/og/chat/${id}`}`,
           width: 1200,
           height: 630,
         },
@@ -62,20 +62,20 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     twitter: {
       card: 'summary_large_image',
       title: title,
-      url: `https://atlas.ai/${id}`,
+      url: `${process.env.NEXT_PUBLIC_APP_URL}/${id}`,
       description: 'A search in atlas.ai',
       siteName: 'atlas.ai',
       creator: '@atlasai',
       images: [
         {
-          url: `https://atlas.ai/api/og/chat/${id}`,
+          url: `${process.env.NEXT_PUBLIC_OG_CHAT_URL_TEMPLATE?.replace('{id}', id) || `${process.env.NEXT_PUBLIC_APP_URL}/api/og/chat/${id}`}`,
           width: 1200,
           height: 630,
         },
       ],
     },
     alternates: {
-      canonical: `https://atlas.ai/${id}`,
+      canonical: `${process.env.NEXT_PUBLIC_APP_URL}/${id}`,
     },
   } as Metadata;
 }

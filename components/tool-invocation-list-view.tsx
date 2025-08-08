@@ -602,8 +602,10 @@ const ToolInvocationListView = memo(
                               size="sm"
                               onClick={() => {
                                 const url = place.place_id
-                                  ? `https://www.google.com/maps/place/?q=place_id:${place.place_id}`
-                                  : `https://www.google.com/maps/search/?api=1&query=${place.location.lat},${place.location.lng}`;
+                                  ? (process.env.NEXT_PUBLIC_GOOGLE_MAPS_PLACE_URL_TEMPLATE || 'https://www.google.com/maps/place/?q=place_id:{place_id}').replace('{place_id}', place.place_id)
+                                  : (process.env.NEXT_PUBLIC_GOOGLE_MAPS_SEARCH_URL_TEMPLATE || 'https://www.google.com/maps/search/?api=1&query={lat},{lng}')
+                                      .replace('{lat}', String(place.location.lat))
+                                      .replace('{lng}', String(place.location.lng));
                                 window.open(url, '_blank');
                               }}
                               className="h-7 px-2 text-xs bg-blue-600 hover:bg-blue-700 text-white"

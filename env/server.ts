@@ -4,6 +4,7 @@ import { z } from 'zod';
 
 export const serverEnv = createEnv({
   server: {
+    APP_URL: z.string().url().optional(),
     XAI_API_KEY: z.string().min(1),
     OPENAI_API_KEY: z.string().min(1),
     ANTHROPIC_API_KEY: z.string().min(1),
@@ -40,6 +41,9 @@ export const serverEnv = createEnv({
     QSTASH_TOKEN: z.string().min(1),
     RESEND_API_KEY: z.string().min(1),
     ALLOWED_ORIGINS: z.string().optional().default('http://localhost:3000'),
+    SCIRA_TASKS_ENDPOINT: z.string().url().optional(),
+    ELEVENLABS_TTS_BASE_URL: z.string().url().optional(),
+    ELEVENLABS_DEFAULT_VOICE_ID: z.string().optional(),
   },
   experimental__runtimeEnv: process.env,
 });

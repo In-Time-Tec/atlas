@@ -74,7 +74,8 @@ const Navbar = memo(
 
       if (!chatId) return;
 
-      const url = `https://atlas.ai/${chatId}`;
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || '';
+      const url = chatId ? `${appUrl}/${chatId}` : '';
       navigator.clipboard.writeText(url);
       setCopied(true);
       toast.success('Link copied to clipboard');
@@ -82,7 +83,7 @@ const Navbar = memo(
       setTimeout(() => setCopied(false), 2000);
     };
 
-    const shareUrl = chatId ? `https://atlas.ai/${chatId}` : '';
+    const shareUrl = chatId && process.env.NEXT_PUBLIC_APP_URL ? `${process.env.NEXT_PUBLIC_APP_URL}/${chatId}` : '';
 
     const handleShareLinkedIn = (e: React.MouseEvent) => {
       e.preventDefault();

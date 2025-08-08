@@ -109,7 +109,9 @@ const PlaceCard: React.FC<PlaceCardProps> = ({ place, onClick, variant = 'list' 
               onClick={(e) => {
                 e.stopPropagation();
                 window.open(
-                  `https://www.google.com/maps/dir/?api=1&destination=${place.location.lat},${place.location.lng}`,
+                  (process.env.NEXT_PUBLIC_GOOGLE_MAPS_DIR_URL_TEMPLATE || 'https://www.google.com/maps/dir/?api=1&destination={lat},{lng}')
+                    .replace('{lat}', String(place.location.lat))
+                    .replace('{lng}', String(place.location.lng)),
                   '_blank',
                 );
               }}

@@ -25,8 +25,9 @@ export async function checkImageModeration(images: any) {
 }
 
 export async function generateSpeech(text: string) {
-  const VOICE_ID = "JBFqnCBsd6RMkjVDRZzb";
-  const url = `https://api.elevenlabs.io/v1/text-to-speech/${VOICE_ID}`;
+  const VOICE_ID = serverEnv.ELEVENLABS_DEFAULT_VOICE_ID || "JBFqnCBsd6RMkjVDRZzb";
+  const base = serverEnv.ELEVENLABS_TTS_BASE_URL || "https://api.elevenlabs.io/v1";
+  const url = `${base}/text-to-speech/${VOICE_ID}`;
   const method = "POST";
 
   if (!ELEVENLABS_API_KEY) {

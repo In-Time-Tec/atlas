@@ -784,9 +784,8 @@ const ExtremeSearchComponent = ({
               url: annotation.source.url,
               favicon:
                 annotation.source.favicon ||
-                `https://www.google.com/s2/favicons?sz=128&domain=${encodeURIComponent(
-                  new URL(annotation.source.url).hostname,
-                )}`,
+                (process.env.NEXT_PUBLIC_GOOGLE_FAVICON_URL || 'https://www.google.com/s2/favicons?sz=128&domain={domain}')
+                  .replace('{domain}', encodeURIComponent(new URL(annotation.source.url).hostname)),
             });
           }
         } else if (annotation.type === 'content' && annotation.content && typeof annotation.content.url === 'string') {
@@ -805,9 +804,8 @@ const ExtremeSearchComponent = ({
               text: annotation.content.text || '',
               favicon:
                 annotation.content.favicon ||
-                `https://www.google.com/s2/favicons?sz=128&domain=${encodeURIComponent(
-                  new URL(annotation.content.url).hostname,
-                )}`,
+                (process.env.NEXT_PUBLIC_GOOGLE_FAVICON_URL || 'https://www.google.com/s2/favicons?sz=128&domain={domain}')
+                  .replace('{domain}', encodeURIComponent(new URL(annotation.content.url).hostname)),
             });
           }
         }
