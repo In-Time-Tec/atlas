@@ -130,14 +130,14 @@ export async function createScheduledTask({
     const organizationId = activeOrganization?.id || null;
 
     const existingTasks = await getTasksByUserId({ userId: user.id, organizationId });
-    if (existingTasks.length >= 10) {
-      throw new Error("You have reached the maximum limit of 10 tasks");
+    if (existingTasks.length >= serverEnv.MAX_TASKS_PER_USER) {
+      throw new Error(`You have reached the maximum limit of ${serverEnv.MAX_TASKS_PER_USER} tasks`);
     }
 
     if (frequency === "daily") {
       const activeDailyTasks = existingTasks.filter((task) => task.frequency === "daily" && task.status === "active");
-      if (activeDailyTasks.length >= 5) {
-        throw new Error("You have reached the maximum limit of 5 active daily tasks");
+      if (activeDailyTasks.length >= serverEnv.MAX_ACTIVE_DAILY_TASKS) {
+        throw new Error(`You have reached the maximum limit of ${serverEnv.MAX_ACTIVE_DAILY_TASKS} active daily tasks`);
       }
     }
 
@@ -179,7 +179,7 @@ export async function createScheduledTask({
       try {
         if (frequency === "once") {
           const delay = Math.floor((nextRunAt.getTime() - Date.now()) / 1000);
-          const minimumDelay = Math.max(delay, 5);
+          const minimumDelay = Math.max(delay, serverEnv.MIN_TASK_DELAY_MINUTES * 60);
 
           if (delay > 0) {
             await qstash.publish({
@@ -343,8 +343,8 @@ export async function updateTaskAction({
       const activeDailyTasks = existingTasks.filter(
         (existingTask) => existingTask.frequency === "daily" && existingTask.status === "active" && existingTask.id !== id,
       );
-      if (activeDailyTasks.length >= 5) {
-        throw new Error("You have reached the maximum limit of 5 active daily tasks");
+      if (activeDailyTasks.length >= serverEnv.MAX_ACTIVE_DAILY_TASKS) {
+        throw new Error(`You have reached the maximum limit of ${serverEnv.MAX_ACTIVE_DAILY_TASKS} active daily tasks`);
       }
     }
 

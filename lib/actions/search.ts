@@ -1,6 +1,7 @@
 "use server";
 
 import { atlas } from "@/ai/providers";
+import { serverEnv } from "@/env/server";
 import { SearchGroupId } from "@/lib/utils";
 import { generateObject, UIMessage, generateText } from "ai";
 import { z } from "zod";
@@ -66,7 +67,7 @@ export async function generateTitleFromUserMessage({ message }: { message: UIMes
 
 export async function fetchMetadata(url: string) {
   try {
-    const response = await fetch(url, { next: { revalidate: 3600 } });
+    const response = await fetch(url, { next: { revalidate: serverEnv.DEFAULT_REVALIDATE_SECONDS } });
     const html = await response.text();
 
     const titleMatch = html.match(/<title>(.*?)<\/title>/i);

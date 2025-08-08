@@ -44,6 +44,25 @@ export const serverEnv = createEnv({
     SCIRA_TASKS_ENDPOINT: z.string().url().optional(),
     ELEVENLABS_TTS_BASE_URL: z.string().url().optional(),
     ELEVENLABS_DEFAULT_VOICE_ID: z.string().optional(),
+
+    DAILY_SEARCH_LIMIT: z.coerce.number().optional().default(100),
+    EXTREME_SEARCH_LIMIT: z.coerce.number().optional().default(5),
+    DEFAULT_REVALIDATE_SECONDS: z.coerce.number().optional().default(3600),
+
+    MAX_TASKS_PER_USER: z.coerce.number().optional().default(10),
+    MAX_ACTIVE_DAILY_TASKS: z.coerce.number().optional().default(5),
+    MIN_TASK_DELAY_MINUTES: z.coerce.number().optional().default(5),
+
+    PRO_MONTHLY_USD: z.coerce.number().optional().default(15),
+    PRO_MONTHLY_INR: z.coerce.number().optional().default(1299),
+    TEAM_PER_SEAT_USD: z.coerce.number().optional().default(12),
+    TEAM_PER_SEAT_INR: z.coerce.number().optional().default(999),
+    ENTERPRISE_PER_SEAT_USD: z.coerce.number().optional().default(10),
+    ENTERPRISE_PER_SEAT_INR: z.coerce.number().optional().default(799),
+    MIN_TEAM_SEATS: z.coerce.number().optional().default(3),
+    MIN_ENTERPRISE_SEATS: z.coerce.number().optional().default(10),
+
+    SNAPSHOT_NAME: z.string().optional(),
   },
   experimental__runtimeEnv: process.env,
 });

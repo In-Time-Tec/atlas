@@ -14,6 +14,12 @@ export const clientEnv = createEnv({
     NEXT_PUBLIC_GOOGLE_MAPS_DIR_URL_TEMPLATE: z.string().optional(),
     NEXT_PUBLIC_GOOGLE_FAVICON_URL: z.string().optional(),
     NEXT_PUBLIC_OG_CHAT_URL_TEMPLATE: z.string().optional(),
+
+    NEXT_PUBLIC_MAX_FILES: z.coerce.number().optional().default(10),
+    NEXT_PUBLIC_MAX_FILE_SIZE_MB: z.coerce.number().optional().default(5),
+    NEXT_PUBLIC_MAX_INPUT_CHARS: z.coerce.number().optional().default(10000),
+    NEXT_PUBLIC_STALE_TIME_MS_DEFAULT: z.coerce.number().optional().default(300000),
+    NEXT_PUBLIC_GC_TIME_MS_DEFAULT: z.coerce.number().optional().default(600000),
   },
   runtimeEnv: {
     NEXT_PUBLIC_MAPBOX_TOKEN: process.env.NEXT_PUBLIC_MAPBOX_TOKEN,
@@ -26,5 +32,11 @@ export const clientEnv = createEnv({
     NEXT_PUBLIC_GOOGLE_MAPS_DIR_URL_TEMPLATE: process.env.NEXT_PUBLIC_GOOGLE_MAPS_DIR_URL_TEMPLATE,
     NEXT_PUBLIC_GOOGLE_FAVICON_URL: process.env.NEXT_PUBLIC_GOOGLE_FAVICON_URL,
     NEXT_PUBLIC_OG_CHAT_URL_TEMPLATE: process.env.NEXT_PUBLIC_OG_CHAT_URL_TEMPLATE,
+
+    NEXT_PUBLIC_MAX_FILES: process.env.NEXT_PUBLIC_MAX_FILES,
+    NEXT_PUBLIC_MAX_FILE_SIZE_MB: process.env.NEXT_PUBLIC_MAX_FILE_SIZE_MB,
+    NEXT_PUBLIC_MAX_INPUT_CHARS: process.env.NEXT_PUBLIC_MAX_INPUT_CHARS,
+    NEXT_PUBLIC_STALE_TIME_MS_DEFAULT: process.env.NEXT_PUBLIC_STALE_TIME_MS_DEFAULT,
+    NEXT_PUBLIC_GC_TIME_MS_DEFAULT: process.env.NEXT_PUBLIC_GC_TIME_MS_DEFAULT,
   },
 });
