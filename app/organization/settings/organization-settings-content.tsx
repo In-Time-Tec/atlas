@@ -229,36 +229,6 @@ export function OrganizationSettingsContent({ organization, isOwner, isAdmin }: 
         </div>
         <div className="bg-muted/50 rounded-lg p-4 space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="org-name">Organization Name</Label>
-            <Input
-              id="org-name"
-              value={orgName}
-              onChange={(e) => {
-                const next = e.target.value;
-                setOrgName(next);
-                const currentGenerated = generateSlug(organization.name);
-                if (orgSlug === currentGenerated) {
-                  setOrgSlug(generateSlug(next));
-                }
-              }}
-              placeholder="Acme Inc."
-              disabled={!isAdmin}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="org-slug">Organization Slug</Label>
-            <Input
-              id="org-slug"
-              value={orgSlug}
-              onChange={(e) => setOrgSlug(e.target.value)}
-              placeholder="acme-inc"
-              disabled={!isAdmin}
-            />
-            <p className="text-xs text-muted-foreground">Used in URLs. Lowercase letters, numbers, and hyphens only.</p>
-          </div>
-
-          <div className="space-y-2">
             <Label>Organization Logo</Label>
             <div className="flex items-center gap-4">
               <Avatar className="h-12 w-12">
@@ -290,6 +260,36 @@ export function OrganizationSettingsContent({ organization, isOwner, isAdmin }: 
               </div>
             </div>
             {uploadError && <p className="text-xs text-destructive">{uploadError}</p>}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="org-name">Organization Name</Label>
+            <Input
+              id="org-name"
+              value={orgName}
+              onChange={(e) => {
+                const next = e.target.value;
+                setOrgName(next);
+                const currentGenerated = generateSlug(organization.name);
+                if (orgSlug === currentGenerated) {
+                  setOrgSlug(generateSlug(next));
+                }
+              }}
+              placeholder="Acme Inc."
+              disabled={!isAdmin}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="org-slug">Organization Slug</Label>
+            <Input
+              id="org-slug"
+              value={orgSlug}
+              onChange={(e) => setOrgSlug(e.target.value)}
+              placeholder="acme-inc"
+              disabled={!isAdmin}
+            />
+            <p className="text-xs text-muted-foreground">Used in URLs. Lowercase letters, numbers, and hyphens only.</p>
           </div>
 
           {isAdmin && (
